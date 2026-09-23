@@ -1408,51 +1408,58 @@ function warmContainer() {
   resetIdleTimer();
 }
 
-// ── File upload helper ───────────────────────────────────────────────────────
-// Reads `file` and returns the upload-ready payload object expected by the
-// `uploadTripFile` / similar Apps Script endpoints:
-//   { fileName, fileData, mimeType[, compressed: 'gzip'] }
-//
-// GPX/KML are XML and shrink ~60-70% under gzip — the browser's
-// CompressionStream gives us that for free, no library required. KMZ is
-// already a zip; re-gzipping a zip gains nothing, so we leave it raw.
-// Photos and everything else fall back to the legacy data-URL form so
-// the backend keeps working untouched. If CompressionStream isn't
-// available (very old browsers) we transparently skip the optimisation.
-//
-// Backend contract: when `compressed: 'gzip'` is present, fileData is
-// raw base64 of gzipped bytes (no `data:` prefix); the handler must
-// `Utilities.ungzip()` before consuming.
-function readFileForUpload(file) {
-  function asDataUrl() {
-    return new Promise(function (resolve, reject) {
-      var r = new FileReader();
-      r.onload  = function (e) { resolve({ fileName: file.name, fileData: e.target.result, mimeType: file.type || 'application/octet-stream' }); };
-      r.onerror = function ()  { reject(new Error('Read error')); };
-      r.readAsDataURL(file);
-    });
+// ── Supabase Storage direct upload/delete ────────────────────────────────
+// Same trust model as callPostgrestTable/callSupabaseRpc above: the
+// caller's own self-signed JWT, gated by RLS on storage.objects (see
+// supabase/migrations/20260923100000_trip_files_storage.sql) — no Edge
+// Function needed for the file bytes themselves. Used by
+// shared/logbook-upload.js for trip GPS tracks + photos.
+async function uploadToStorage(bucket, path, blob, contentType) {
+  const token = _getAccessToken();
+  const headers = {
+    'Content-Type': contentType || blob.type || 'application/octet-stream',
+    'apikey': SUPABASE_ANON_KEY,
+    'x-upsert': 'true',
+  };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const resp = await fetch(SUPABASE_URL + '/storage/v1/object/' + bucket + '/' + path, {
+    method: 'POST',
+    headers: headers,
+    body: blob,
+  });
+  if (!resp.ok) {
+    const data = await resp.json().catch(function () { return null; });
+    const err = new Error((data && (data.message || data.error)) || ('Storage upload error ' + resp.status));
+    err.status = resp.status; err.code = resp.status;
+    throw err;
   }
-  var ext = (file.name.split('.').pop() || '').toLowerCase();
-  if ((ext !== 'gpx' && ext !== 'kml') ||
-      typeof CompressionStream === 'undefined' ||
-      typeof file.stream !== 'function') {
-    return asDataUrl();
+  return SUPABASE_URL + '/storage/v1/object/public/' + bucket + '/' + path;
+}
+
+// Takes either a full public storage URL (as stored in trackFileUrl/
+// photoUrls) or a bare "bucket/path" and deletes the underlying object.
+// 404 is treated as success (file already gone), matching the old
+// tryTrashDriveUrl_'s "best-effort, never block on this" contract.
+async function deleteFromStorage(urlOrPath) {
+  const m = String(urlOrPath || '').match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
+  let bucket, path;
+  if (m) { bucket = m[1]; path = m[2]; }
+  else {
+    const parts = String(urlOrPath || '').split('/');
+    bucket = parts.shift(); path = parts.join('/');
   }
-  try {
-    var gz = file.stream().pipeThrough(new CompressionStream('gzip'));
-    return new Response(gz).arrayBuffer().then(function (buf) {
-      var bytes = new Uint8Array(buf), bin = '', CHUNK = 0x8000;
-      for (var i = 0; i < bytes.length; i += CHUNK) {
-        bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
-      }
-      return {
-        fileName:   file.name,
-        fileData:   btoa(bin),
-        mimeType:   file.type || 'application/octet-stream',
-        compressed: 'gzip',
-      };
-    }).catch(asDataUrl);
-  } catch (e) {
-    return asDataUrl();
+  if (!bucket || !path) return;
+  const token = _getAccessToken();
+  const headers = { 'apikey': SUPABASE_ANON_KEY };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const resp = await fetch(SUPABASE_URL + '/storage/v1/object/' + bucket + '/' + path, {
+    method: 'DELETE',
+    headers: headers,
+  });
+  if (!resp.ok && resp.status !== 404) {
+    const data = await resp.json().catch(function () { return null; });
+    const err = new Error((data && (data.message || data.error)) || ('Storage delete error ' + resp.status));
+    err.status = resp.status; err.code = resp.status;
+    throw err;
   }
 }

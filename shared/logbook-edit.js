@@ -173,10 +173,7 @@ function inlineUploadTrack(tripId) {
     if (!file) return;
     showToast(s('logbook.uploadingTrack'));
     try {
-      // readFileForUpload gzips GPX/KML transparently before base64-encoding.
-      const info = await readFileForUpload(file);
-      const res = await apiPost('uploadTripFile', { fileType: 'track', fileName: info.fileName, fileData: info.fileData, mimeType: info.mimeType, compressed: info.compressed });
-      if (!res.ok) { showToast(s('logbook.uploadFailed'), 'err'); return; }
+      const res = await uploadTripTrack(file);
       // Save track to trip
       const updates = { trackFileUrl: res.trackFileUrl || '', trackSimplified: res.trackSimplified || '', trackSource: res.trackSource || '' };
       if (res.distanceNm) updates.distanceNm = res.distanceNm;
@@ -192,7 +189,7 @@ function inlineUploadTrack(tripId) {
 }
 
 // ── Inline photo upload ────────────────────────────────────────────────────
-let _inlinePhotos = []; // [{fileName, fileData, mimeType}]
+let _inlinePhotos = []; // File[]
 
 function inlineUploadPhotos(tripId) {
   _inlinePhotos = [];
@@ -218,15 +215,11 @@ function closePhotoUpload() {
 function handleInlinePhotos(input) {
   const preview = document.getElementById('puPhotoPreview');
   Array.from(input.files).forEach(file => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      _inlinePhotos.push({ fileName: file.name, fileData: reader.result, mimeType: file.type });
-      const img = document.createElement('img');
-      img.src = reader.result;
-      img.className = 'photo-thumb';
-      preview.appendChild(img);
-    };
-    reader.readAsDataURL(file);
+    _inlinePhotos.push(file);
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    img.className = 'photo-thumb';
+    preview.appendChild(img);
   });
 }
 
@@ -247,10 +240,10 @@ async function submitInlinePhotos() {
     let urls = []; try { urls = JSON.parse(t.photoUrls || '[]'); } catch(e) {}
     let meta = {}; try { if (t.photoMeta) meta = JSON.parse(t.photoMeta); } catch(e) {}
     const newUrls = [];
-    await Promise.all(_inlinePhotos.map(async ph => {
+    await Promise.all(_inlinePhotos.map(async file => {
       try {
-        const res = await apiPost('uploadTripFile', { fileType: 'photo', fileName: ph.fileName, fileData: ph.fileData, mimeType: ph.mimeType, shared, clubUse });
-        if (res.ok && res.photoUrl) {
+        const res = await uploadTripPhoto(file);
+        if (res.photoUrl) {
           newUrls.push(res.photoUrl);
           meta[res.photoUrl] = { shared, clubUse, uploadedBy: user.kennitala };
         }

@@ -447,36 +447,25 @@ async function addNewPort(){
 
 function handleTrackFile(input){
   const file=input.files[0];
-  if(!file){ _pendingTrack=null; document.getElementById('mTrackStatus').textContent=''; return; }
   const statusEl=document.getElementById('mTrackStatus');
-  statusEl.textContent=s('logbook.readingFile');
-  // readFileForUpload (in shared/api.js) gzips GPX/KML transparently before
-  // base64-encoding; KMZ and other formats fall through as plain data URLs.
-  readFileForUpload(file).then(function(info){
-    _pendingTrack=info;
-    statusEl.textContent=s('logbook.fileReady',{name:file.name});
-    statusEl.style.color='var(--accent)';
-  }).catch(function(){
-    statusEl.textContent=s('logbook.readError');
-    statusEl.style.color='var(--red)';
-    _pendingTrack=null;
-  });
+  if(!file){ _pendingTrack=null; statusEl.textContent=''; return; }
+  // Actual upload + parse happens at submit time (uploadTripTrack, shared/
+  // logbook-upload.js) — nothing to read ahead of time now that we upload
+  // the File directly instead of pre-encoding it to base64.
+  _pendingTrack=file;
+  statusEl.textContent=s('logbook.fileReady',{name:file.name});
+  statusEl.style.color='var(--accent)';
 }
 
 function handlePhotoFiles(input){
   const files=Array.from(input.files);
-  _pendingPhotos=[];
+  _pendingPhotos=files;
   const preview=document.getElementById('mPhotoPreview');
   preview.innerHTML='';
   files.forEach(function(file){
-    const reader=new FileReader();
-    reader.onload=function(e){
-      _pendingPhotos.push({fileName:file.name, fileData:e.target.result, mimeType:file.type||'image/jpeg'});
-      const img=document.createElement('img');
-      img.src=e.target.result; img.className='photo-thumb';
-      preview.appendChild(img);
-    };
-    reader.readAsDataURL(file);
+    const img=document.createElement('img');
+    img.src=URL.createObjectURL(file); img.className='photo-thumb';
+    preview.appendChild(img);
   });
 }
 
@@ -696,18 +685,14 @@ async function submitManual(){
   let trackFileUrl='', trackSimplified='', trackSource='', distanceNm=distInput;
   if(_pendingTrack){
     try{
-      const tr=await apiPost('uploadTripFile',{fileType:'track',fileName:_pendingTrack.fileName,fileData:_pendingTrack.fileData,mimeType:_pendingTrack.mimeType,compressed:_pendingTrack.compressed});
-      if(tr.ok){
-        trackFileUrl=tr.trackFileUrl||'';
-        trackSimplified=tr.trackSimplified||'';
-        trackSource=tr.trackSource||'';
-        if(!distanceNm && tr.distanceNm){
-          distanceNm=tr.distanceNm;
-          const dEl=document.getElementById('mDistanceNm');
-          if(dEl) dEl.value=tr.distanceNm;
-        }
-      } else {
-        showToast(s('logbook.uploadNoConfig'),'warn');
+      const tr=await uploadTripTrack(_pendingTrack);
+      trackFileUrl=tr.trackFileUrl||'';
+      trackSimplified=tr.trackSimplified||'';
+      trackSource=tr.trackSource||'';
+      if(!distanceNm && tr.distanceNm){
+        distanceNm=tr.distanceNm;
+        const dEl=document.getElementById('mDistanceNm');
+        if(dEl) dEl.value=tr.distanceNm;
       }
     }catch(e){ showToast(s('logbook.gpsUploadFailed',{msg:e.message}),'warn'); }
   }
@@ -716,11 +701,10 @@ async function submitManual(){
   const photoUrls=[];
   const mPhotoShared = document.getElementById('mPhotoShared').checked;
   const mPhotoClubUse = document.getElementById('mPhotoClubUse').checked;
-  await Promise.all(_pendingPhotos.map(async ph=>{
+  await Promise.all(_pendingPhotos.map(async file=>{
     try{
-      const pr=await apiPost('uploadTripFile',{fileType:'photo',fileName:ph.fileName,fileData:ph.fileData,mimeType:ph.mimeType,shared:mPhotoShared,clubUse:mPhotoClubUse});
-      if(pr.ok && pr.photoUrl) photoUrls.push(pr.photoUrl);
-      else if(!pr.ok) showToast(s('logbook.photoNoConfig'),'warn');
+      const pr=await uploadTripPhoto(file);
+      if(pr.photoUrl) photoUrls.push(pr.photoUrl);
     }catch(e){ showToast(s('logbook.photoUploadFailed',{msg:e.message}),'warn'); }
   }));
 

@@ -133,7 +133,7 @@ The **Scheduling** tab is the visible consolidation of activity types, volunteer
 
 ### Logbook shared module is split similarly
 
-`shared/logbook.js` is core (state, filter/render, card interactions, map, lightbox, mutations, delegation). Feature code lives in `shared/logbook-form.js`, `shared/logbook-share.js`, `shared/logbook-confirm.js`, `shared/logbook-edit.js`. Both consuming portals (`captain/`, `logbook/`) include all five in sequence.
+`shared/logbook.js` is core (state, filter/render, card interactions, map, lightbox, mutations, delegation). Feature code lives in `shared/logbook-form.js`, `shared/logbook-share.js`, `shared/logbook-confirm.js`, `shared/logbook-edit.js`, `shared/logbook-upload.js`. Both consuming portals (`captain/`, `logbook/`) include all six in sequence. `shared/logbook-upload.js` (GPS track + trip-photo uploads to Supabase Storage — see "Trip file uploads" below) is also included standalone by `member/`, whose own trip-logging flow (checkout return) doesn't use the rest of the logbook module.
 
 ## Accessibility
 
@@ -147,6 +147,10 @@ The **Scheduling** tab is the visible consolidation of activity types, volunteer
 - Generic sheet writes go through `insertRow_` / `updateRow_`, which invoke `validateRow_` — don't bypass by calling `sheet.appendRow()` / `setValue()` directly unless the shape is genuinely narrower (e.g. time-clock entries).
 - `headers.indexOf('colName')` returns -1 silently on missing columns. Use `requiredCol_(headers, 'colName')` instead when the result will be used as an index; the helper throws loudly.
 - New public (no-auth) GET endpoints must be gated by `publicRateLimit_(bucket, limit, windowSec)` in the `doGet` router.
+
+## File uploads (Supabase Storage)
+
+Trip GPS tracks and photos upload directly from the client to Supabase Storage (bucket `trip-files`) via `uploadToStorage`/`deleteFromStorage` in `shared/api.js`, using the caller's own self-signed JWT — no Edge Function in the loop for the file bytes, gated by RLS policies on `storage.objects` (see `supabase/migrations/20260923100000_trip_files_storage.sql`). `shared/logbook-upload.js` builds on those primitives: `uploadTripTrack`/`uploadTripPhoto` also do photo resize (canvas, 1600px long edge, JPEG quality 0.82) and client-side GPX/KML parsing (`DOMParser`) before/around the upload. Follow this same direct-to-Storage pattern for any new file-upload feature rather than proxying bytes through an Edge Function, unless the upload needs server-side validation an RLS policy genuinely can't express.
 
 ## Dynamic language attribute
 

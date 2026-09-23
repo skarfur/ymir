@@ -530,8 +530,10 @@ async function toggleHelm(tripId, checked) {
 async function deleteTripTrack(tripId) {
   if (!await ymConfirm(s('logbook.deleteTrack'))) return;
   try {
-    await apiPost('deleteTripFile', { tripId, kennitala: user.kennitala, fileType: 'track' });
     const t = myTrips.find(x => x.id === tripId);
+    await deleteTripStorageFile(t && t.trackFileUrl);
+    await callSupabaseRpc('save_trip', { p_id: tripId, p_updates: { trackFileUrl: '', trackSimplified: '', trackSource: '' } });
+    _invalidateApiCache('getTrips');
     if (t) { t.trackFileUrl = ''; t.trackSimplified = ''; t.trackSource = ''; }
     applyFilter();
     showToast(s('logbook.trackDeleted'), 'success');
@@ -541,17 +543,19 @@ async function deleteTripTrack(tripId) {
 async function deleteTripPhoto(tripId, photoUrl) {
   if (!await ymConfirm(s('logbook.deletePhoto'))) return;
   try {
-    await apiPost('deleteTripFile', { tripId, kennitala: user.kennitala, fileType: 'photo', photoUrl });
+    await deleteTripStorageFile(photoUrl);
     const t = myTrips.find(x => x.id === tripId);
     if (t) {
       let urls = []; try { urls = JSON.parse(t.photoUrls || '[]'); } catch(e) {}
       urls = urls.filter(u => u !== photoUrl);
-      t.photoUrls = urls.length ? JSON.stringify(urls) : '';
+      const photoUrls = urls.length ? JSON.stringify(urls) : '';
       // Clean up photo meta
       let meta = {}; try { if (t.photoMeta) meta = JSON.parse(t.photoMeta); } catch(e) {}
       delete meta[photoUrl];
-      t.photoMeta = Object.keys(meta).length ? JSON.stringify(meta) : '';
-      await callSupabaseRpc('save_trip', { p_id: tripId, p_updates: { photoMeta: t.photoMeta } });
+      const photoMeta = Object.keys(meta).length ? JSON.stringify(meta) : '';
+      await callSupabaseRpc('save_trip', { p_id: tripId, p_updates: { photoUrls, photoMeta } });
+      t.photoUrls = photoUrls;
+      t.photoMeta = photoMeta;
       _invalidateApiCache('getTrips');
     }
     applyFilter();

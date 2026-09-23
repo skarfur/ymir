@@ -941,63 +941,46 @@ function _renderHelmSection(){
 function _handleRetTrack(input){
   var file=input.files[0];
   var statusEl=document.getElementById('retTrackStatus');
-  var IS=getLang()==='IS';
   if(!file){window._retPendingTrack=null;statusEl.textContent='';return;}
-  statusEl.textContent=s('member.readingFile');statusEl.style.color='var(--muted)';
-  var reader=new FileReader();
-  reader.onload=function(e){
-    var pending={fileName:file.name,fileData:e.target.result,mimeType:file.type||'application/octet-stream',
-                 uploadPromise:null,uploadResult:null,uploadError:null};
-    window._retPendingTrack=pending;
-    statusEl.textContent=s('logbook.uploadingTrack');statusEl.style.color='var(--muted)';
-    // Eagerly upload so distance is calculated before the user submits
-    pending.uploadPromise=apiPost('uploadTripFile',{fileType:'track',fileName:pending.fileName,fileData:pending.fileData,mimeType:pending.mimeType})
-      .then(function(tr){
-        pending.uploadResult=tr;
-        if(window._retPendingTrack!==pending) return tr; // superseded by another file pick
-        if(tr && tr.ok){
-          if(tr.distanceNm){
-            var dEl=document.getElementById('retDistNm');
-            if(dEl && !dEl.value) dEl.value=tr.distanceNm;
-            statusEl.textContent=s('member.fileReady',{name:file.name})+' · '+tr.distanceNm+' nm';
-          } else {
-            statusEl.textContent=s('member.fileReady',{name:file.name});
-          }
-          statusEl.style.color='var(--accent)';
-        } else {
-          statusEl.textContent=s('member.fileReady',{name:file.name});
-          statusEl.style.color='var(--accent)';
-        }
-        return tr;
-      })
-      .catch(function(err){
-        pending.uploadError=err;
-        if(window._retPendingTrack===pending){
-          statusEl.textContent=s('member.fileReady',{name:file.name});
-          statusEl.style.color='var(--accent)';
-        }
-      });
-  };
-  reader.onerror=function(){statusEl.textContent=s('member.readError');statusEl.style.color='var(--red)';window._retPendingTrack=null;};
-  reader.readAsDataURL(file);
+  var pending={file:file,uploadPromise:null,uploadResult:null,uploadError:null};
+  window._retPendingTrack=pending;
+  statusEl.textContent=s('logbook.uploadingTrack');statusEl.style.color='var(--muted)';
+  // Eagerly upload (uploadTripTrack, shared/logbook-upload.js) so distance
+  // is calculated before the user submits.
+  pending.uploadPromise=uploadTripTrack(file)
+    .then(function(tr){
+      pending.uploadResult=tr;
+      if(window._retPendingTrack!==pending) return tr; // superseded by another file pick
+      if(tr.distanceNm){
+        var dEl=document.getElementById('retDistNm');
+        if(dEl && !dEl.value) dEl.value=tr.distanceNm;
+        statusEl.textContent=s('member.fileReady',{name:file.name})+' · '+tr.distanceNm+' nm';
+      } else {
+        statusEl.textContent=s('member.fileReady',{name:file.name});
+      }
+      statusEl.style.color='var(--accent)';
+      return tr;
+    })
+    .catch(function(err){
+      pending.uploadError=err;
+      if(window._retPendingTrack===pending){
+        statusEl.textContent=s('member.fileReady',{name:file.name});
+        statusEl.style.color='var(--accent)';
+      }
+    });
 }
 
 function _handleRetPhotos(input){
   var files=Array.from(input.files);
-  window._retPendingPhotos=[];
+  window._retPendingPhotos=files;
   var preview=document.getElementById('retPhotoPreview');
   preview.innerHTML='';
   files.forEach(function(file){
-    var reader=new FileReader();
-    reader.onload=function(e){
-      window._retPendingPhotos.push({fileName:file.name,fileData:e.target.result,mimeType:file.type||'image/jpeg'});
-      var img=document.createElement('img');
-      img.src=e.target.result;
-      img.style.cssText='width:56px;height:56px;object-fit:cover;border-radius:4px;border:1px solid var(--border)';
-      img.title=file.name;
-      preview.appendChild(img);
-    };
-    reader.readAsDataURL(file);
+    var img=document.createElement('img');
+    img.src=URL.createObjectURL(file);
+    img.style.cssText='width:56px;height:56px;object-fit:cover;border-radius:4px;border:1px solid var(--border)';
+    img.title=file.name;
+    preview.appendChild(img);
   });
 }
 
@@ -1175,24 +1158,18 @@ async function confirmCheckIn(coId) {
     try{
       if(pending.uploadPromise) await pending.uploadPromise;
       if(pending.uploadError) throw pending.uploadError;
-      var tr=pending.uploadResult;
-      if(!tr){
-        tr=await apiPost('uploadTripFile',{fileType:'track',fileName:pending.fileName,fileData:pending.fileData,mimeType:pending.mimeType});
-      }
-      if(tr && tr.ok){
-        trackFileUrl=tr.trackFileUrl||'';trackSimplified=tr.trackSimplified||'';trackSource=tr.trackSource||'';
-        if(!distanceNm&&tr.distanceNm){distanceNm=tr.distanceNm;var dEl=document.getElementById('retDistNm');if(dEl)dEl.value=tr.distanceNm;}
-      } else {showToast(s('member.gpsNoConfig'),'warn');}
+      var tr=pending.uploadResult||await uploadTripTrack(pending.file);
+      trackFileUrl=tr.trackFileUrl||'';trackSimplified=tr.trackSimplified||'';trackSource=tr.trackSource||'';
+      if(!distanceNm&&tr.distanceNm){distanceNm=tr.distanceNm;var dEl=document.getElementById('retDistNm');if(dEl)dEl.value=tr.distanceNm;}
     }catch(e){showToast(s('member.gpsUploadFailed',{msg:e.message}),'warn');}
   }
 
   // Upload photos in parallel
   var photoUrls=[];
-  await Promise.all((window._retPendingPhotos||[]).map(async function(ph){
+  await Promise.all((window._retPendingPhotos||[]).map(async function(file){
     try{
-      var pr=await apiPost('uploadTripFile',{fileType:'photo',fileName:ph.fileName,fileData:ph.fileData,mimeType:ph.mimeType});
-      if(pr.ok&&pr.photoUrl)photoUrls.push(pr.photoUrl);
-      else if(!pr.ok)showToast(s('member.photoNoConfig'),'warn');
+      var pr=await uploadTripPhoto(file);
+      if(pr.photoUrl)photoUrls.push(pr.photoUrl);
     }catch(e){showToast(s('member.photoUploadFailed',{msg:e.message}),'warn');}
   }));
 

@@ -3,6 +3,62 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — trip GPS track + photo uploads, Supabase Storage
+
+`uploadTripFile`/`deleteTripFile` were never ported off Apps Script's Google
+Drive integration (`DriveApp`) during the migration — three separate
+frontend flows (`shared/logbook-form.js`'s new-trip form,
+`shared/logbook-edit.js`'s inline add-track/add-photos, and
+`member/member.js`'s checkout-return flow) were all still calling actions
+that don't exist on the Supabase side, so none of them actually worked.
+
+Rather than rebuild the same feature against Drive (a second Google Cloud
+integration, on top of the Workload Identity Federation just set up for
+Calendar), this moves it to Supabase Storage — a first-class part of the
+platform already being migrated to, not a Google product with no native
+Supabase equivalent the way Calendar is.
+
+- `supabase/migrations/20260923100000_trip_files_storage.sql`: new
+  public `trip-files` storage bucket, with insert/select/delete RLS
+  policies gated by `session_valid()` — the same trust boundary
+  `save_trip`/`delete_trip` already use (any live session, not
+  owner-scoped; `save_trip` already lets any authenticated session
+  rewrite a trip's file-url columns, so a stricter per-object check
+  wouldn't add real protection).
+- `shared/api.js`: new `uploadToStorage`/`deleteFromStorage` — direct
+  client uploads/deletes via the caller's own self-signed JWT, same
+  pattern as `callPostgrestTable`/`callSupabaseRpc`. No Edge Function is
+  in the loop for the file bytes. Replaces the now-dead
+  `readFileForUpload` (which prepped a payload for the Apps-Script-only
+  action).
+- `shared/logbook-upload.js` (new): `uploadTripTrack`/`uploadTripPhoto`/
+  `deleteTripStorageFile`. Photos get downscaled to 1600px on the long
+  edge and re-encoded as JPEG (quality 0.82) via canvas before upload —
+  typically a 70-90% size cut from a raw phone-camera photo, since
+  nothing was compressing these client-side before. GPX/KML track
+  parsing (distance, times, simplified map-preview points) is a faithful
+  port of `trips.gs`'s `parseGpsTrack_`/`rdpSimplify_`/`haversineM_` to
+  the browser's `DOMParser`, so it stays entirely client-side too — no
+  Edge Function needed for that either. KMZ (zipped KML) uploads and
+  attaches fine but doesn't auto-parse (would need unzipping first) —
+  same graceful "not every format parses" degradation the original had
+  for anything malformed.
+- `shared/logbook-form.js`, `shared/logbook-edit.js`, `shared/logbook.js`,
+  `member/member.js`: rewired all four upload call sites and both delete
+  call sites onto the above. Also fixes a pre-existing bug in
+  `deleteTripPhoto` where the filtered `photoUrls` was computed locally
+  but only `photoMeta` was ever persisted back via `save_trip` — deleting
+  a photo removed it from the UI but never actually cleared it from the
+  trip row.
+- `captain/index.html`, `logbook/index.html`, `member/index.html`: added
+  the new `shared/logbook-upload.js` include.
+- Removed 9 now-orphaned toast strings (`logbook.readingFile`,
+  `logbook.readError`, `logbook.uploadNoConfig`, `logbook.photoNoConfig`,
+  `logbook.uploadFailed`, `member.readingFile`, `member.readError`,
+  `member.gpsNoConfig`, `member.photoNoConfig`) from both
+  `shared/strings-en.js`/`strings-is.js` — the "not configured"/"reading"
+  states they covered no longer exist now that upload is direct-to-Storage.
+
 ## Unreleased (Supabase branch) — fix handbook org chart appearing empty
 
 The handbook's org chart (and, less visibly, its contacts/docs/info
