@@ -3,6 +3,36 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — fix editing/signing up for a virtual volunteer event
+
+Editing a volunteer-event occurrence that only exists virtually (projected
+client-side from an activity template's bulk schedule, id like
+`vae-{activityTypeId}-{YYYYMMDD}`, never persisted) failed with "Save
+failed: saveVolunteerEvent failed: invalid input syntax for type uuid" —
+the synthetic id was sent straight through to `activities.id`, a real
+`uuid` column.
+
+- `supabase/functions/save-volunteer-event/index.ts`: a `vae-`-prefixed
+  id is now treated as "materialize this occurrence" — look up any row
+  already saved for the same source template + date (so a second edit
+  updates it instead of creating a duplicate), otherwise mint a fresh
+  uuid and record `source_activity_type_id` so `materialized`/future
+  lookups are correct. A plain "Add new" event that merely has an
+  activity type picked in the dropdown is unaffected — only an actual
+  `vae-` id triggers materialization.
+- `supabase/functions/volunteer-signup/index.ts`: had the identical bug,
+  worse — the pre-existing "already signed up" / "role full" checks ran
+  against `event_id` (also `uuid`) *before* the virtual event was ever
+  resolved, so any first-time signup for a virtual occurrence would have
+  thrown before reaching the materialization code that was already there
+  for it. Reordered so the real event row is resolved (materializing if
+  needed) before anything filters on its id.
+- `admin/admin.js`: `saveEntity`'s array-merge now trusts the backend's
+  returned id over the payload's when they differ, instead of always
+  keying off `payload.id` — otherwise the newly materialized event would
+  get filed under its old synthetic id locally, and the very next edit
+  would hit the same uuid error again.
+
 ## Unreleased (Supabase branch) — fix infinite-scroll lists stopping after 2 batches
 
 The admin member list stopped loading partway through (alphabetically,

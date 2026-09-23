@@ -92,16 +92,42 @@ Deno.serve(async (req: Request) => {
   if (endIso && startIso && endIso < startIso) { const swap = endIso; endIso = startIso; startIso = swap; }
   if (endIso && endIso === startIso) endIso = "";
 
-  const id = body?.id ? String(body.id) : crypto.randomUUID();
-  const prev = body?.id ? (await admin.from("activities").select("*").eq("id", id).maybeSingle()).data : null;
+  // A virtual (not-yet-materialized) occurrence's id looks like
+  // 'vae-{activityTypeId}-{YYYYMMDD}' (see shared/volunteer.js's
+  // expandVolunteerActivityTypes) — never a real uuid the activities.id
+  // column can store. Editing one from the admin modal sends that
+  // synthetic id straight through, which used to fail with "invalid
+  // input syntax for type uuid". Materialize it instead: look up any row
+  // already saved for this same source template + date (an earlier
+  // save/signup may have created one) so a second edit updates it rather
+  // than creating a duplicate, and mint a fresh id otherwise.
+  const bodyId = body?.id ? String(body.id) : "";
+  const isVirtualId = bodyId.indexOf("vae-") === 0;
+  // Only treat this as materializing a virtual occurrence when the id
+  // actually says so — a plain "Add new" event that merely has an
+  // activity type picked in the dropdown isn't a materialization, and
+  // shouldn't get flagged as one (toVolDto's `materialized` reads this).
+  const sourceActivityTypeId = isVirtualId
+    ? asUuid(body?.sourceActivityTypeId || body?.activityTypeId)
+    : asUuid(body?.sourceActivityTypeId);
+  let id = asUuid(bodyId);
+  let prev: any = null;
+  if (id) {
+    prev = (await admin.from("activities").select("*").eq("id", id).maybeSingle()).data;
+  } else if (isVirtualId && sourceActivityTypeId && startIso) {
+    prev = (await admin.from("activities").select("*")
+      .eq("source_activity_type_id", sourceActivityTypeId).eq("date", startIso).maybeSingle()).data;
+  }
+  if (!id) id = prev ? prev.id : crypto.randomUUID();
 
   const todayIso = new Date().toISOString().slice(0, 10);
   const row = {
     id,
     signup_required: true,
     status: (startIso && startIso < todayIso) ? "completed" : "upcoming",
-    source: prev ? (prev.source || "manual") : "manual",
+    source: prev ? (prev.source || "manual") : (isVirtualId ? "bulk" : "manual"),
     activity_type_id: asUuid(body?.activityTypeId),
+    source_activity_type_id: prev ? prev.source_activity_type_id : sourceActivityTypeId,
     date: startIso || null,
     end_date: endIso || null,
     start_time: body?.startTime || null,

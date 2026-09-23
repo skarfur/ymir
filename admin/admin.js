@@ -222,11 +222,17 @@ async function saveEntity({ apiAction, call, getArray, setArray, payload, modalI
   try {
     const res = call ? await call() : await apiPost(apiAction, payload);
     const arr = getArray();
-    if (!payload.id && res.id) {
-      setArray([...arr, { ...payload, id: res.id }]);
+    // Trust the backend's id over payload.id when they differ — normally
+    // they match (an update echoes the same id back), but a synthetic
+    // client-side id (e.g. a virtual/not-yet-materialized volunteer event,
+    // 'vae-...') gets replaced with a freshly minted real id on first save.
+    // Falling through to payload.id here (never blindly requiring res.id)
+    // keeps every other caller's existing behavior unchanged.
+    const savedId = (res && res.id) || payload.id;
+    if (!arr.find(x => x.id === savedId)) {
+      setArray([...arr, { ...payload, id: savedId }]);
     } else {
-      setArray(arr.map(x => x.id === payload.id ? { ...x, ...payload } : x));
-      if (!arr.find(x => x.id === payload.id)) setArray([...arr, payload]);
+      setArray(arr.map(x => x.id === savedId ? { ...x, ...payload, id: savedId } : x));
     }
     if (modalId) closeModal(modalId, true);
     if (renderFn) renderFn();
