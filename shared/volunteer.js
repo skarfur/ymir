@@ -122,15 +122,34 @@
     return out;
   }
 
-  // Merge virtual events with saved events. Saved events win if they share
-  // the same virtual id (i.e. they've already been materialized via signup).
+  // Merge virtual events with saved events. Saved events win if they've
+  // already been materialized for the same occurrence — matched by
+  // sourceActivityTypeId + date, NOT by id: a materialized row gets a
+  // freshly minted real uuid (see save-volunteer-event/volunteer-signup),
+  // which never equals its own virtual 'vae-{activityTypeId}-{date}' id.
+  // Comparing ids directly (the previous approach) never matched anything,
+  // so every materialized occurrence showed up twice — the real saved
+  // event plus a stale virtual duplicate still carrying the original
+  // template defaults. Deleting that duplicate silently failed (its id
+  // isn't a real row), which looked exactly like "delete does nothing"
+  // for any event with signups.
   function mergeVolunteerEvents(savedEvents, virtualEvents) {
     var saved = Array.isArray(savedEvents)   ? savedEvents   : [];
     var virt  = Array.isArray(virtualEvents) ? virtualEvents : [];
     var ids = {};
-    saved.forEach(function(e) { if (e && e.id) ids[e.id] = true; });
+    var materializedKeys = {};
+    saved.forEach(function(e) {
+      if (!e) return;
+      if (e.id) ids[e.id] = true;
+      if (e.sourceActivityTypeId && e.date) materializedKeys[e.sourceActivityTypeId + '|' + e.date] = true;
+    });
     var out = saved.slice();
-    virt.forEach(function(e) { if (!ids[e.id]) out.push(e); });
+    virt.forEach(function(e) {
+      if (!e || ids[e.id]) return;
+      var key = (e.sourceActivityTypeId || e.activityTypeId || '') + '|' + (e.date || '');
+      if (materializedKeys[key]) return;
+      out.push(e);
+    });
     return out;
   }
 

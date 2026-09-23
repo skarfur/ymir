@@ -3,6 +3,37 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — fix deleting volunteer events with signups
+
+Deleting a volunteer event that had already been signed up for (i.e. its
+virtual occurrence had been materialized into a real `activities` row)
+silently did nothing — the modal closed but the event stayed in the list.
+
+Root cause was `shared/volunteer.js`'s `mergeVolunteerEvents`: it deduped
+a materialized event against its virtual projection by comparing ids
+directly, but materialization always mints a brand-new random uuid (see
+the `save-volunteer-event`/`volunteer-signup` fix above) — the real row's
+id never equals its own `vae-{activityTypeId}-{date}` virtual id, so the
+dedup never matched anything. Every materialized event rendered twice:
+the real row plus a stale virtual duplicate still carrying the template's
+original defaults. Deleting that duplicate was a no-op (its id isn't a
+real row), which looked exactly like "delete does nothing."
+`delete-volunteer-event` made it worse by never checking its own
+`.delete()` call's error and always returning `{deleted: true}`
+regardless of outcome.
+
+- `shared/volunteer.js`: `mergeVolunteerEvents` now dedupes by
+  `sourceActivityTypeId + date` instead of by id.
+- `admin/volunteers.js`: `deleteVolEvent` passes along the merged event's
+  `sourceActivityTypeId`/`date` as a fallback so the backend can resolve
+  a still-stale virtual id to its real row.
+- `supabase/functions/delete-volunteer-event/index.ts`: rewritten to
+  validate/resolve a `vae-`-prefixed id via the same source+date lookup,
+  drop the redundant explicit `volunteer_signups` delete (`event_id`
+  already has `ON DELETE CASCADE` to `activities`, per
+  `supabase/migrations/20260918201122_scheduling_and_audit.sql`), and
+  actually surface `.delete()` errors instead of swallowing them.
+
 ## Unreleased (Supabase branch) — fix editing/signing up for a virtual volunteer event
 
 Editing a volunteer-event occurrence that only exists virtually (projected

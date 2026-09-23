@@ -259,7 +259,13 @@ async function deleteVolEvent(id) {
   const _id = id || _veEditingId;
   if (!await ymConfirm(s("admin.confirmDeleteVolEvent"))) return;
   try {
-    await apiPost("deleteVolunteerEvent", { id: _id });
+    // If _id is still a virtual 'vae-...' placeholder (stale local merge —
+    // see mergeVolunteerEvents), pass along its source template + date so
+    // the backend can resolve the real materialized row instead of no-op'ing.
+    var _ev = (window._volMergedEvents || []).find(function(e) { return e.id === _id; });
+    var _extra = (_ev && _ev.sourceActivityTypeId && _ev.date)
+      ? { sourceActivityTypeId: _ev.sourceActivityTypeId, date: _ev.date } : {};
+    await apiPost("deleteVolunteerEvent", Object.assign({ id: _id }, _extra));
     volunteerEvents = volunteerEvents.filter(a => a.id !== _id);
     renderVolunteerEvents();
     // Inline delete from the Scheduling timeline triggers this without the
