@@ -3,6 +3,26 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — fix handbook org chart appearing empty
+
+The handbook's org chart (and, less visibly, its contacts/docs/info
+sections) rendered empty even though `app_config`'s `handbookRoles` blob
+had real data — including the "Board" root role.
+
+`supabase/functions/handbook/index.ts`'s `isActive(r)` read `!!(r &&
+r.active)`, so any row with `active` missing/`null` was treated as
+inactive. But every write path (`save-handbook-role`/`-contact`/`-doc`/
+`-info`, and the legacy `handbook.gs` they port) defaults the other way —
+`active: body?.active === false ? false : true` — i.e. a row is active
+unless explicitly deactivated. Rows that entered `app_config` without
+going through a save endpoint (loaded straight from the pre-migration
+Sheets JSON) never got that normalization and sat with `active: null`,
+which the stricter read-side check silently dropped — 10 of 13 role rows
+in the live data, including the chart's own root node.
+
+- `supabase/functions/handbook/index.ts`: `isActive` now checks
+  `r.active !== false`, matching the write side's default. Deployed (v15).
+
 ## Unreleased (Supabase branch) — fix deleting volunteer events with signups
 
 Deleting a volunteer event that had already been signed up for (i.e. its

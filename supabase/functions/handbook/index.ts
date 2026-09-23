@@ -34,8 +34,14 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
+// Matches the write side's convention (save-handbook-role/-contact/-doc/
+// -info all use `active: body?.active === false ? false : true`, ported
+// from handbook.gs's own write-side default) — missing/null active means
+// active, not inactive. Rows loaded straight from the pre-migration Sheets
+// JSON without going through a save endpoint never got that normalization
+// and sat with active: null, which a strict `!!r.active` check drops.
 function isActive(r: any): boolean {
-  return !!(r && r.active);
+  return !!(r && r.active !== false);
 }
 
 function byOrder(a: any, b: any): number {
