@@ -133,6 +133,7 @@ function renderNotifBadges(c) {
     ['saumaBtn',    c.saumaklubbur],
     ['captainQBtn', c.captainQ],
     ['coxswainBtn', c.crewInvites],
+    ['bryggjanBtn', (c.bryggjanOpenPosts || 0) + (c.bryggjanRequests || 0)],
   ];
   pairs.forEach(function(p) {
     var id = p[0], count = p[1];

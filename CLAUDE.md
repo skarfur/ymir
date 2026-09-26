@@ -54,6 +54,7 @@ The app supports Icelandic (`IS`) and English (`EN`). All user-facing strings mu
 - `/weather/` — Weather and tides widget
 - `/settings/`, `/public/` — User settings and public record lookup
 - `/handbook/` — Read-only handbook for members + staff (org chart, docs, info)
+- `/bryggjan/` — "The Pier": ad hoc crew/activity board (propose a slot, others join until full)
 
 ## Caching
 
@@ -151,6 +152,37 @@ The **Scheduling** tab is the visible consolidation of activity types, volunteer
 ## File uploads (Supabase Storage)
 
 Trip GPS tracks and photos upload directly from the client to Supabase Storage (bucket `trip-files`) via `uploadToStorage`/`deleteFromStorage` in `shared/api.js`, using the caller's own self-signed JWT — no Edge Function in the loop for the file bytes, gated by RLS policies on `storage.objects` (see `supabase/migrations/20260923100000_trip_files_storage.sql`). `shared/logbook-upload.js` builds on those primitives: `uploadTripTrack`/`uploadTripPhoto` also do photo resize (canvas, 1600px long edge, JPEG quality 0.82) and client-side GPX/KML parsing (`DOMParser`) before/around the upload. Follow this same direct-to-Storage pattern for any new file-upload feature rather than proxying bytes through an Edge Function, unless the upload needs server-side validation an RLS policy genuinely can't express.
+
+## Ad hoc crew/activity boards (Bryggjan pattern)
+
+`bryggjan/` ("The Pier") is the reference implementation for "propose a
+slot, others join until full": one organizer, a fixed `max_crew`, and a
+roster that fills via request/approve rather than a free-for-all. If a
+future feature needs the same shape (an organizer, a capacity, a roster),
+follow this pattern rather than inventing a new one:
+
+- A qualifying joiner (meets the relevant cert gate) lands straight in the
+  roster as `approved`; a non-qualifying request sits `pending` for the
+  organizer (or staff/admin) to decide by hand. This is the only real
+  implementation of a boat's `access_mode`/`access_gate`/`access_gate_cert`/
+  `access_allowlist` check anywhere in the codebase so far —
+  `member_satisfies_boat_gate_()` in `20260926100000_bryggjan.sql` — every
+  other write path (`save-checkout`, `book_slot`'s plain-kennitala branch)
+  still has this stubbed. Reuse that function rather than re-deriving the
+  gate logic.
+- When the roster is tied to a boat with `slot_scheduling_enabled`, book the
+  reservation under the *organizer's own kennitala* via the existing
+  `save_slot`/`book_slot` RPCs, not `book_slot`'s `p_crew_id` path — that
+  path is hard-wired to the rowing-specific `crews` table (a fixed 2-seat
+  `pairs` structure). An arbitrary-capacity roster needs its own table;
+  don't force it into `crews`.
+- A "mark full when the roster fills" transition should live in one shared
+  `security definer` helper (see `bryggjan_mark_full_if_complete_`) called
+  from both the join path and the approve path, so the two can't drift.
+- All writes go through RPCs; the underlying tables grant only `select` to
+  `authenticated`, gated by an RLS policy that just checks `session_valid()`
+  — the board itself is visible to any active member, but nothing is
+  writable except through validated RPC calls.
 
 ## Dynamic language attribute
 

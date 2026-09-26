@@ -3,6 +3,53 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — Bryggjan: ad hoc crew/activity board
+
+New portal: `bryggjan/` ("The Pier") — a member proposes a slot (sailing,
+rowing, kayaking, or another activity), optionally tied to a specific club
+boat, with a fixed max crew size; other members join until it's full. A
+qualifying joiner (meets the boat's cert gate, or the post's own
+`required_cert` when there's no boat) lands straight in the roster; a
+non-qualifying request sits pending for the organizer to approve or
+decline. Posts can also be set to "contact organizer directly" instead of
+open enrollment.
+
+- `supabase/migrations/20260926100000_bryggjan.sql`: `bryggjan_posts` and
+  `bryggjan_signups` tables (RLS: any authenticated session can read the
+  board; all writes go through RPCs), `member_satisfies_boat_gate_()` (the
+  first real implementation of a boat's `access_mode`/`access_gate`/
+  `access_allowlist` check anywhere in the migration — every other write
+  path still has it stubbed), and six RPCs: `create_bryggjan_post`,
+  `join_bryggjan_post`, `decide_bryggjan_signup`, `withdraw_bryggjan_signup`,
+  `cancel_bryggjan_post`, and the shared `bryggjan_mark_full_if_complete_`
+  helper. A boat-linked post books a real reservation via the existing
+  `save_slot`/`book_slot` RPCs, under the organizer's own kennitala (not
+  `book_slot`'s crew path, which is hard-wired to the rowing-specific
+  2-seat `crews` table — the wrong shape for an arbitrary-size roster) —
+  `tentative` until the roster fills, released automatically
+  (`unbook_slot`) if the post is cancelled.
+- `supabase/migrations/20260926110000_bryggjan_seen_at.sql`: adds
+  `members.bryggjan_seen_at` + `mark_bryggjan_seen()`, so the notification
+  badge only counts open posts created since the member last viewed the
+  board.
+- `supabase/functions/get-notifications/index.ts`: two new counts,
+  `bryggjanOpenPosts` (open posts I haven't seen, haven't joined, and
+  don't organize) and `bryggjanRequests` (pending signups on posts I
+  organize) — surfaced together as a single badge on the member hub.
+- `bryggjan/index.html`, `bryggjan/bryggjan.js`, `bryggjan/bryggjan.css`
+  (new): the board (direct PostgREST read with an embedded
+  `bryggjan_signups` join, no Edge Function needed), the create-post
+  modal, and join/withdraw/cancel/approve/decline actions — all via direct
+  `callSupabaseRpc` calls, manually invalidating the `getNotifications`
+  cache after each write since these bypass `apiPost`'s
+  `_INVALIDATES`-map-driven invalidation (same pattern as `logbook.js`'s
+  `toggleHelm`).
+- `member/index.html`, `member/member.js`, `member/member.css`: new
+  "Bryggjan" quick-action button (anchor icon) on the member hub, wired
+  into the existing notification-badge renderer.
+- `shared/ui.js`: added `bryggjan` to `MEMBER_SUBPAGES` so its header shows
+  a "← Member hub" back link like the other member-launched portals.
+
 ## Unreleased (Supabase branch) — email notification for club-shared trip photos
 
 New feature: when a member marks a trip photo as shareable with the club,

@@ -43,11 +43,14 @@ Deno.serve(async (req: Request) => {
   const kennitala = body?.kennitala ? String(body.kennitala).trim() : "";
   if (!kennitala) return json({ error: "kennitala required" }, 400);
 
-  const counts = { confirmations: 0, crewInvites: 0, saumaklubbur: 0, captainQ: 0 };
+  const counts = {
+    confirmations: 0, crewInvites: 0, saumaklubbur: 0, captainQ: 0,
+    bryggjanOpenPosts: 0, bryggjanRequests: 0,
+  };
 
   // trip_confirmations, the member lookup, and maintenance are all
-  // independent of each other — only crew_invites needs member.id first,
-  // so it's the one query that stays sequential.
+  // independent of each other — only crew_invites/bryggjan need member.id
+  // first, so those are the ones that stay sequential.
   const [
     { data: pending },
     { data: member },
@@ -59,7 +62,7 @@ Deno.serve(async (req: Request) => {
       .eq("to_kennitala", kennitala)
       .eq("status", "pending")
       .eq("dismissed", false),
-    admin.from("members").select("id").eq("kennitala", kennitala).maybeSingle(),
+    admin.from("members").select("id, bryggjan_seen_at").eq("kennitala", kennitala).maybeSingle(),
     admin.from("maintenance").select("saumaklubbur, resolved, approved, verkstjori, followers, updated_at"),
   ]);
   const pendingList = pending || [];
@@ -67,12 +70,38 @@ Deno.serve(async (req: Request) => {
   counts.confirmations = pendingList.filter((r) => r.type !== "verify").length;
 
   if (member) {
-    const { data: invites } = await admin
-      .from("crew_invites")
-      .select("id")
-      .eq("to_member_id", member.id)
-      .eq("status", "pending");
+    const seenAt = member.bryggjan_seen_at || "1970-01-01T00:00:00Z";
+    const [
+      { data: invites },
+      { data: myActiveSignups },
+      { data: myOrganizedPosts },
+      { data: openPosts },
+    ] = await Promise.all([
+      admin.from("crew_invites").select("id").eq("to_member_id", member.id).eq("status", "pending"),
+      admin.from("bryggjan_signups").select("post_id").eq("member_id", member.id).in("status", ["approved", "pending"]),
+      admin.from("bryggjan_posts").select("id").eq("organizer_member_id", member.id),
+      admin.from("bryggjan_posts").select("id, organizer_member_id, created_at").eq("status", "open").gt("created_at", seenAt),
+    ]);
     counts.crewInvites = (invites || []).length;
+
+    // "New open posts I haven't seen" — excludes my own posts (I already
+    // know about those) and anything I've already requested/joined.
+    const myActivePostIds = new Set((myActiveSignups || []).map((s) => s.post_id));
+    counts.bryggjanOpenPosts = (openPosts || []).filter(
+      (p) => p.organizer_member_id !== member.id && !myActivePostIds.has(p.id),
+    ).length;
+
+    // Pending requests on posts I organize — the thing that actually
+    // needs my action (an auto-approved join needs nothing from me).
+    const myPostIds = (myOrganizedPosts || []).map((p) => p.id);
+    if (myPostIds.length) {
+      const { data: pendingReqs } = await admin
+        .from("bryggjan_signups")
+        .select("id")
+        .in("post_id", myPostIds)
+        .eq("status", "pending");
+      counts.bryggjanRequests = (pendingReqs || []).length;
+    }
   }
 
   let saumaCount = 0;

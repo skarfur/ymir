@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://jilmxhonqhbvieyknyen.supabase.co; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="../shared/logo.svg">
+  <title>Ýmir — Bryggjan</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <script src="../shared/theme-init.js"></script>
+  <link rel="stylesheet" href="../shared/style.css">
+  <script src="../shared/api.js" defer></script>
+  <script src="../shared/ui.js" defer></script>
+  <script src="../shared/layout.js" defer></script>
+  <script src="../shared/strings.js"></script>
+  <link rel="stylesheet" href="bryggjan.css">
+</head>
+<body>
+<ymir-header></ymir-header>
+
+<div class="page-content">
+
+  <div class="mb-14 d-flex items-center justify-between">
+    <div>
+      <div class="fw-500" style="font-size:16px;color:var(--text)" data-s="brg.title"></div>
+      <div class="text-sm text-muted mt-2" data-s="brg.subtitle"></div>
+    </div>
+    <button class="btn btn-primary" data-brg-click="openCreatePost" data-s="brg.newPost"></button>
+  </div>
+
+  <!-- ══ BOARD ══ -->
+  <div id="brgBoard" class="d-flex flex-col gap-10"></div>
+
+  <!-- ══ EMPTY STATE ══ -->
+  <div id="brgEmpty" class="mt-16 hidden">
+    <div class="empty-note" data-s="brg.empty"></div>
+  </div>
+
+  <!-- ══ LOADING STATE ══ -->
+  <div id="brgLoading" class="mt-16">
+    <div class="loading-state"><span class="spinner"></span></div>
+  </div>
+
+</div>
+
+<!-- ══ CREATE POST MODAL ══ -->
+<div class="modal-bg hidden" id="brgCreateModal" data-brg-close-self="brgCreateModal">
+  <div class="modal-box">
+    <div class="d-flex items-center justify-between mb-14">
+      <h3 class="modal-title" style="margin:0" data-s="brg.newPost"></h3>
+      <button class="modal-close-x" data-brg-close="brgCreateModal">&times;</button>
+    </div>
+    <div>
+      <div id="brgCreateErr" class="text-red text-xs mb-8 hidden"></div>
+
+      <div class="field">
+        <label data-s="brg.activityKind" for="brgKind"></label>
+        <select id="brgKind">
+          <option value="sailing" data-s="brg.kindSailing"></option>
+          <option value="rowing" data-s="brg.kindRowing"></option>
+          <option value="kayaking" data-s="brg.kindKayaking"></option>
+          <option value="other" data-s="brg.kindOther"></option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label data-s="brg.boat" for="brgBoat"></label>
+        <select id="brgBoat" data-brg-change="onBoatChange">
+          <option value="" data-s="brg.boatNone"></option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label data-s="brg.title2" for="brgPostTitle"></label>
+        <input type="text" id="brgPostTitle" maxlength="120">
+      </div>
+
+      <div class="gap-10" style="display:grid;grid-template-columns:1fr 1fr">
+        <div class="field">
+          <label data-s="brg.date" for="brgDate"></label>
+          <input type="date" id="brgDate">
+        </div>
+        <div class="field">
+          <label data-s="brg.maxCrew" for="brgMaxCrew"></label>
+          <input type="number" id="brgMaxCrew" min="1" max="20" value="4">
+        </div>
+      </div>
+
+      <div id="brgTimeFields" class="gap-10" style="display:grid;grid-template-columns:1fr 1fr">
+        <div class="field">
+          <label data-s="brg.startTime" for="brgStartTime"></label>
+          <input type="time" id="brgStartTime">
+        </div>
+        <div class="field">
+          <label data-s="brg.endTime" for="brgEndTime"></label>
+          <input type="time" id="brgEndTime">
+        </div>
+      </div>
+      <div id="brgSlotHint" class="text-xs text-muted mb-8 hidden" data-s="brg.slotHint"></div>
+
+      <div id="brgCertField" class="field hidden">
+        <label data-s="brg.requiredCert" for="brgRequiredCert"></label>
+        <input type="text" id="brgRequiredCert" placeholder="e.g. swim_comp">
+        <div class="text-10 text-muted mt-3" data-s="brg.requiredCertHint"></div>
+      </div>
+
+      <div class="field">
+        <label data-s="brg.note" for="brgNote"></label>
+        <textarea id="brgNote" rows="2" maxlength="500"></textarea>
+      </div>
+
+      <div class="field">
+        <label data-s="brg.enrollmentMode" for="brgEnrollMode"></label>
+        <select id="brgEnrollMode">
+          <option value="open" data-s="brg.enrollOpen"></option>
+          <option value="contact_organizer" data-s="brg.enrollContact"></option>
+        </select>
+      </div>
+
+      <div class="d-flex gap-8 items-center mt-8">
+        <button class="btn btn-secondary" data-brg-close="brgCreateModal" data-s="btn.cancel"></button>
+        <button class="btn btn-primary" data-brg-click="submitCreatePost" data-s="brg.post"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="bryggjan.js" defer></script>
+</body>
+</html>
