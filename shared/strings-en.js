@@ -794,6 +794,8 @@ var _STRINGS_FLAT = {
   "boat.allowlist": "Allowed Members",
   "boat.reservations": "Charter Status",
   "boat.addReservation": "Assign Charter",
+  "boat.maintenanceHistory": "Maintenance history",
+  "boat.maintenanceHistoryEmpty": "No maintenance records for this boat.",
   "boat.removeReservation": "Remove",
   "boat.reservationSaved": "Charter saved",
   "boat.reservationRemoved": "Charter removed",

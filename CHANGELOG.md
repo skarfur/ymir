@@ -3,6 +3,36 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — Per-boat maintenance history; admin-only delete
+
+New: the admin Boats edit modal now shows a "Maintenance history" section
+listing that boat's maintenance/repair records (the existing `maintenance`
+table already carries `boatId` — no new backend read). Reuses
+`shared/maintenance.js`'s `maintRenderCardCompact`/`maintOpenDetail` (the
+same rich detail modal — resolve, comment, OOS toggle — the staff
+Maintenance portal already uses), so clicking a history entry opens full
+detail right from the boat editor rather than a read-only summary.
+
+- `supabase/functions/delete-maintenance/index.ts`: **fix** — this action
+  had no role check at all; any signed-in member could delete any
+  maintenance record (reachable from the maintenance detail modal, which
+  is also embedded in the member-facing `saumaklubbur/` portal). Now
+  requires `session.role === 'admin'`, matching the pattern every other
+  admin-only Edge Function already uses (e.g. `admin-edit-time`).
+- `shared/maintenance.js`: the delete button in the detail modal is now
+  only rendered for admins (`isAdmin(_u)`) — it would just 403 for anyone
+  else now, so it shouldn't be shown to them either. This affects the
+  existing `maintenance/` and `saumaklubbur/` portals too, not just the
+  new admin view.
+- `admin/index.html`: added `shared/maintenance.js` as a script include.
+- `admin/boats.js`: `renderMaintenanceHistory()`/`_ensureMaintHistorySection()`
+  — fetches `getMaintenance` (already 30s-cached), filters by `boatId`,
+  renders newest-first. Dynamically injects its container after the
+  existing Reservations section rather than editing the shared
+  `boat-modal.js` template, since that template is also used by
+  `captain/` — this keeps the history section admin-only without adding a
+  dead, always-hidden container to captain's copy of the modal.
+
 ## Unreleased (Supabase branch) — Bryggjan notification: someone joined your post
 
 `get-notifications` now also counts `bryggjanNewJoins`: approved signups

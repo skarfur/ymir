@@ -794,6 +794,8 @@ var _STRINGS_FLAT = {
   "boat.allowlist": "Leyfilegir meðlimir",
   "boat.reservations": "Úthluta leigu",
   "boat.addReservation": "Bæta við leigu",
+  "boat.maintenanceHistory": "Viðhaldssaga",
+  "boat.maintenanceHistoryEmpty": "Engar viðhaldsfærslur fyrir þennan bát.",
   "boat.removeReservation": "Fjarlægja",
   "boat.reservationSaved": "Leiga vistuð",
   "boat.reservationRemoved": "Leiga fjarlægð",

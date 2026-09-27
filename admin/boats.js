@@ -216,6 +216,7 @@ function openBoatModal(id) {
   document.getElementById("bResEnd").value = '';
   document.getElementById("bResNote").value = '';
   renderReservationList(b);
+  renderMaintenanceHistory(b);
   updateOwnershipFields();
   updateBoatModalFields();
   applyStrings(document.getElementById("boatModal"));
@@ -456,6 +457,72 @@ async function removeResFromModal(resId) {
     renderReservationList(b);
     toast(s('boat.reservationRemoved'));
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
+}
+
+// ── Maintenance history ──────────────────────────────────────────────────────
+// Read-only list of this boat's maintenance/repair records (shared/maintenance.js
+// table, already keyed by boatId — no new backend read needed). Clicking a card
+// opens the same rich detail modal the staff Maintenance portal uses (resolve,
+// comment, etc.); its delete button is admin-only (see shared/maintenance.js).
+var _boatMaintReqs = [];
+
+function _ensureMaintHistorySection() {
+  if (document.getElementById('bMaintHistorySection')) return;
+  var resSection = document.getElementById('bReservationSection');
+  if (!resSection) return;
+  var wrap = document.createElement('div');
+  wrap.id = 'bMaintHistorySection';
+  wrap.className = 'hidden';
+  wrap.style.marginTop = '14px';
+  wrap.innerHTML =
+    '<div style="font-size:9px;letter-spacing:1px;color:var(--muted);margin-bottom:6px" data-s="boat.maintenanceHistory"></div>' +
+    '<div id="bMaintHistoryList"></div>' +
+    '<div id="bMaintHistoryEmpty" class="text-xs text-muted hidden" data-s="boat.maintenanceHistoryEmpty"></div>';
+  resSection.insertAdjacentElement('afterend', wrap);
+  document.getElementById('bMaintHistoryList').onclick = function (e) {
+    var card = e.target.closest('.maint-card-clickable');
+    if (!card) return;
+    var r = _boatMaintReqs.find(function (x) { return x.id === card.dataset.id; });
+    if (r) maintOpenDetail(r, user.name);
+  };
+  if (typeof applyStrings === 'function') applyStrings(wrap);
+}
+
+async function renderMaintenanceHistory(boat) {
+  _ensureMaintHistorySection();
+  var section = document.getElementById('bMaintHistorySection');
+  if (!section) return;
+  if (!boat) { section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+  window._maintUser = user;
+
+  var listEl = document.getElementById('bMaintHistoryList');
+  var emptyEl = document.getElementById('bMaintHistoryEmpty');
+  listEl.innerHTML = '<div class="text-xs text-muted">' + s('lbl.loading') + '</div>';
+  emptyEl.classList.add('hidden');
+
+  var res;
+  try {
+    res = await apiGet('getMaintenance');
+  } catch (e) {
+    listEl.innerHTML = '<div class="text-xs text-red">' + s('toast.loadFailed') + ': ' + esc(e.message) + '</div>';
+    return;
+  }
+  // Stale-guard: the boat modal may have been closed/reopened for a
+  // different boat while this fetch was in flight.
+  if (editingId !== boat.id) return;
+
+  _boatMaintReqs = (res.requests || []).filter(function (r) { return r.boatId === boat.id; })
+    .sort(function (a, b) { return (b.createdAt || '') > (a.createdAt || '') ? 1 : -1; });
+
+  if (!_boatMaintReqs.length) {
+    listEl.innerHTML = '';
+    emptyEl.classList.remove('hidden');
+    return;
+  }
+  listEl.innerHTML = _boatMaintReqs.map(function (r) {
+    return '<div class="maint-card-clickable" data-id="' + esc(r.id || '') + '">' + maintRenderCardCompact(r) + '</div>';
+  }).join('');
 }
 
 async function saveBoat() {

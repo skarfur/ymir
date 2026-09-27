@@ -249,7 +249,7 @@ function maintOpenDetail(r, currentUser) {
       </div>
       ${isSauma && !boolVal(r.approved) ? `<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:var(--accent)11;border:1px solid var(--accent)44;font-size:12px;color:var(--accent-fg);display:flex;align-items:center;gap:6px;flex-wrap:wrap">${icon('hourglass')}<span>${s('maint.pendingReview')}</span><button id="mdApproveBtn" class="btn btn-primary btn-sm" style="margin-left:auto">${s('maint.approveBtn')}</button></div>` : ''}
       <div class="req-actions" style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button id="mdDeleteBtn" class="btn-ghost-sm danger icon-btn" title="${s('maint.deleteBtn')}" aria-label="${s('maint.deleteBtn')}">${icon('trash-2')}</button>
+        ${isAdmin(_u) ? `<button id="mdDeleteBtn" class="btn-ghost-sm danger icon-btn" title="${s('maint.deleteBtn')}" aria-label="${s('maint.deleteBtn')}">${icon('trash-2')}</button>` : ''}
         ${typeof window.maintOpenEdit === 'function' ? `<button id="mdEditBtn" class="btn-ghost-sm">${s('btn.edit')}</button>` : ''}
         ${showReassign ? `<button id="mdReassignBtn" class="btn-ghost-sm icon-btn">${icon('spool')}<span>${isSauma ? s('maint.reassignToMaint') : s('maint.reassignToSauma')}</span></button>` : ''}
         ${isSauma && boolVal(r.approved) ? `<button id="mdHoldBtn" class="btn-ghost-sm icon-btn" style="margin-left:auto">${isOnHold ? icon('play')+'<span>'+s('maint.resumeBtn')+'</span>' : icon('pause')+'<span>'+s('maint.putOnHold')+'</span>'}</button>` : ''}

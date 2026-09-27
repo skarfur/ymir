@@ -19,6 +19,7 @@ Deno.serve(async (req: Request) => {
   const admin = createAdminClient();
   const session = await resolveSession(admin, body?.sessionToken as string | undefined);
   if (!session) return json({ error: "Unauthorized" }, 401);
+  if (session.role !== "admin") return json({ error: "Admin only" }, 403);
 
   const id = body?.id ? String(body.id) : "";
   if (!id) return json({ error: "id required" }, 400);
