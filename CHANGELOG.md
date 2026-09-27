@@ -3,6 +3,19 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — Bryggjan notification: someone joined your post
+
+`get-notifications` now also counts `bryggjanNewJoins`: approved signups
+(instant, auto-qualified joins — the ones that don't need a decision, so
+they weren't generating a notification of any kind before) on posts you
+organize, since you last saw the board. Unlike `bryggjanRequests` (pending
+requests, which count regardless of when they arrived — they still need a
+decision), this one is seen-at-gated: otherwise every visit to Bryggjan
+would re-flag joins you already know about. Rolled into the same badge
+total on the member hub's Bryggjan button alongside the other two counts.
+Tested live: joined a real post as a second member, confirmed the count
+appeared for the organizer, then cleaned up the test signup.
+
 ## Unreleased (Supabase branch) — Bryggjan follow-ups: boat-gate fix, calendar view
 
 - **Fix**: `member_satisfies_boat_gate_()` (Bryggjan's boat cert-gate check)

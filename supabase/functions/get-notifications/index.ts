@@ -45,7 +45,7 @@ Deno.serve(async (req: Request) => {
 
   const counts = {
     confirmations: 0, crewInvites: 0, saumaklubbur: 0, captainQ: 0,
-    bryggjanOpenPosts: 0, bryggjanRequests: 0,
+    bryggjanOpenPosts: 0, bryggjanRequests: 0, bryggjanNewJoins: 0,
   };
 
   // trip_confirmations, the member lookup, and maintenance are all
@@ -91,16 +91,25 @@ Deno.serve(async (req: Request) => {
       (p) => p.organizer_member_id !== member.id && !myActivePostIds.has(p.id),
     ).length;
 
-    // Pending requests on posts I organize — the thing that actually
-    // needs my action (an auto-approved join needs nothing from me).
+    // Signups on posts I organize. Pending ones always count (they need my
+    // decision regardless of when they arrived — visiting the board once
+    // shouldn't make an undecided request stop being flagged). Approved
+    // ones (instant, auto-qualified joins) don't need action, so those
+    // only count if they're new since I last saw the board — otherwise
+    // every visit to Bryggjan would re-flag joins I already know about.
+    // Excludes my own auto-seated signup as organizer either way.
     const myPostIds = (myOrganizedPosts || []).map((p) => p.id);
     if (myPostIds.length) {
-      const { data: pendingReqs } = await admin
+      const { data: mySignups } = await admin
         .from("bryggjan_signups")
-        .select("id")
+        .select("id, status, member_id, requested_at")
         .in("post_id", myPostIds)
-        .eq("status", "pending");
-      counts.bryggjanRequests = (pendingReqs || []).length;
+        .in("status", ["pending", "approved"]);
+      const list = mySignups || [];
+      counts.bryggjanRequests = list.filter((su) => su.status === "pending").length;
+      counts.bryggjanNewJoins = list.filter(
+        (su) => su.status === "approved" && su.member_id !== member.id && su.requested_at > seenAt,
+      ).length;
     }
   }
 
