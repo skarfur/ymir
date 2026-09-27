@@ -3,6 +3,19 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — Fix: staff Fleet card click did nothing
+
+- `staff/staff.js`: **fix** — clicking a boat card on the staff Fleet grid
+  never opened anything, including before this session's maintenance-history
+  work. `renderFleetStatus`'s click wiring resolves the clicked boat via
+  `boatRegistry.getBoat(id)`, but `boatRegistry.setBoats(boats)` was never
+  called anywhere in staff.js, so the registry's `_boats` map was always
+  empty and every lookup returned `null` — `openBoatActionCard(null)`
+  silently no-ops. Added `boatRegistry.setBoats(boats)` after both places
+  `boats` gets (re)assigned (initial load, and after the OOS-toggle
+  save-then-reload). Fleet cards now open their action popup — including
+  the maintenance history section added below.
+
 ## Unreleased (Supabase branch) — Per-boat maintenance history; admin-only delete
 
 New: clicking a boat card (not its action buttons) now shows that boat's

@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window._activityTemplates = cfgRes.activityTemplates || [];
     checkouts   = coRes.checkouts  || [];
     boats       = (cfgRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
+    boatRegistry.setBoats(boats);
     locations   = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
     members     = (mRes.members    || []).filter(m => m.active !== false && m.active !== 'false');
     maintenance = (maintRes.requests || maintRes.maintenance || [])
@@ -749,6 +750,7 @@ async function toggleBoatAvailability(boatId) {
     });
     await apiPost('saveConfig', { boats: allBoats });
     boats = allBoats.filter(b => b.active !== false && b.active !== 'false');
+    boatRegistry.setBoats(boats);
     renderAll();
     showToast(wasOos ? s('fleet.actionMarkAvail') + ' ✓' : s('fleet.actionMarkOos') + ' ✓');
   } catch(e) {
