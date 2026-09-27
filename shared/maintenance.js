@@ -559,6 +559,69 @@ function maintOpenDetail(r, currentUser) {
   })();
 }
 
+// ── Per-boat maintenance history ─────────────────────────────────────────────
+// Fetches getMaintenance (already 30s-cached client-side) and renders this
+// boat's records into containerEl, newest first, as compact clickable cards
+// that open the full detail modal above. Shared by every portal that shows
+// a "what's this boat's maintenance history" surface (currently: admin's
+// boat cards via openBoatHistoryModal below, staff's boat action card, and
+// captain's My Boats cards) so there's exactly one fetch/render/wire path.
+async function mountBoatMaintHistory(containerEl, boatId, currentUserName) {
+  if (!containerEl) return;
+  containerEl.innerHTML = '<div style="font-size:11px;color:var(--muted)">' + s('lbl.loading') + '</div>';
+  let res;
+  try {
+    res = await apiGet('getMaintenance');
+  } catch (e) {
+    containerEl.innerHTML = '<div style="font-size:11px;color:var(--red)">' + s('toast.loadFailed') + ': ' + esc(e.message) + '</div>';
+    return;
+  }
+  const reqs = (res.requests || []).filter(r => r.boatId === boatId)
+    .sort((a, b) => (b.createdAt || '') > (a.createdAt || '') ? 1 : -1);
+  if (!reqs.length) {
+    containerEl.innerHTML = '<div style="font-size:11px;color:var(--muted)">' + s('boat.maintenanceHistoryEmpty') + '</div>';
+    return;
+  }
+  containerEl.innerHTML = reqs.map(r =>
+    '<div class="maint-card-clickable" data-id="' + esc(r.id || '') + '">' + maintRenderCardCompact(r) + '</div>'
+  ).join('');
+  containerEl.onclick = function (e) {
+    const card = e.target.closest('.maint-card-clickable');
+    if (!card) return;
+    const r = reqs.find(x => x.id === card.dataset.id);
+    if (r) maintOpenDetail(r, currentUserName);
+  };
+}
+
+// Standalone "boat history" modal — built once, reused across boats (same
+// self-contained lazy-create pattern as maintDetailModal above). Used by
+// portals whose boat card has no existing click-through modal of its own
+// (admin, captain); staff's boat card already opens one
+// (openBoatActionCard) so it calls mountBoatMaintHistory directly instead.
+function openBoatHistoryModal(boat, currentUserName) {
+  if (!boat) return;
+  if (!document.getElementById('boatHistoryModal')) {
+    const el = document.createElement('div');
+    el.id = 'boatHistoryModal';
+    el.className = 'modal-overlay hidden';
+    el.innerHTML = `<div class="modal" style="max-width:480px;max-height:80vh;overflow-y:auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <span id="bhmTitle" style="font-weight:600;font-size:15px"></span>
+        <button id="bhmClose" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted);padding:0 2px;line-height:1">&times;</button>
+      </div>
+      <div style="font-size:9px;letter-spacing:1px;color:var(--muted);margin-bottom:6px">${s('boat.maintenanceHistory')}</div>
+      <div id="bhmList"></div>
+    </div>`;
+    el.addEventListener('click', e => { if (e.target === el) closeModal('boatHistoryModal'); });
+    document.body.appendChild(el);
+    el.querySelector('#bhmClose').addEventListener('click', () => closeModal('boatHistoryModal'));
+  }
+  const emoji = (typeof boatEmoji === 'function') ? boatEmoji((boat.category || '').toLowerCase()) : '';
+  document.getElementById('bhmTitle').textContent = (emoji ? emoji + ' ' : '') + (boat.name || '');
+  openModal('boatHistoryModal');
+  mountBoatMaintHistory(document.getElementById('bhmList'), boat.id, currentUserName);
+}
+
 function maintRenderCard(r) {
   const resolved  = boolVal(r.resolved);
   const isSauma   = boolVal(r.saumaklubbur);

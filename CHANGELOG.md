@@ -5,14 +5,33 @@ Commit hashes reference the `main` branch.
 
 ## Unreleased (Supabase branch) — Per-boat maintenance history; admin-only delete
 
-New: the admin Boats edit modal now shows a "Maintenance history" section
-listing that boat's maintenance/repair records (the existing `maintenance`
-table already carries `boatId` — no new backend read). Reuses
-`shared/maintenance.js`'s `maintRenderCardCompact`/`maintOpenDetail` (the
-same rich detail modal — resolve, comment, OOS toggle — the staff
-Maintenance portal already uses), so clicking a history entry opens full
-detail right from the boat editor rather than a read-only summary.
+New: clicking a boat card (not its action buttons) now shows that boat's
+maintenance/repair history — in admin's Boats tab, staff's Fleet grid, and
+captain's My Boats. The existing `maintenance` table already carries
+`boatId` on every record, so this is purely a new read/render path, no new
+recording mechanism. Deliberately *not* in the boat edit modal (shared
+between `admin/` and `captain/` via `shared/boat-modal.js`) — that's for
+changing a boat's config, not browsing its history, and putting it there
+would've meant either editing that shared template (affecting both
+portals whether they want it or not) or a second, edit-modal-only copy.
 
+- `shared/maintenance.js`: `mountBoatMaintHistory(containerEl, boatId, userName)`
+  — the single fetch/render/wire path every portal calls (`getMaintenance`,
+  already 30s-cached; filters by `boatId`; renders newest-first as
+  compact cards via the existing `maintRenderCardCompact`; clicking one
+  opens the same full detail modal — resolve, comment, OOS toggle — the
+  staff Maintenance portal already uses). `openBoatHistoryModal(boat, userName)`
+  wraps that in a small standalone modal (lazy-created once, reused per
+  boat) for portals with no click-through modal of their own.
+- `admin/boats.js`: the `.boat-card` in the Boats tab now opens
+  `openBoatHistoryModal` on click; Edit/QR/Delete keep working normally
+  since the delegated listener resolves to the nearest `data-admin-click`
+  match, so those buttons' own handlers still take priority over the
+  card's.
+- `captain/captain.js`: same pattern on the `.cq-boat` card in My Boats.
+- `staff/staff.js`: the existing boat-card popup (`openBoatActionCard`,
+  already opened by a fleet-card click) gets a history section appended
+  below its action buttons — no second modal stacked on top of the first.
 - `supabase/functions/delete-maintenance/index.ts`: **fix** — this action
   had no role check at all; any signed-in member could delete any
   maintenance record (reachable from the maintenance detail modal, which
@@ -23,15 +42,9 @@ detail right from the boat editor rather than a read-only summary.
   only rendered for admins (`isAdmin(_u)`) — it would just 403 for anyone
   else now, so it shouldn't be shown to them either. This affects the
   existing `maintenance/` and `saumaklubbur/` portals too, not just the
-  new admin view.
-- `admin/index.html`: added `shared/maintenance.js` as a script include.
-- `admin/boats.js`: `renderMaintenanceHistory()`/`_ensureMaintHistorySection()`
-  — fetches `getMaintenance` (already 30s-cached), filters by `boatId`,
-  renders newest-first. Dynamically injects its container after the
-  existing Reservations section rather than editing the shared
-  `boat-modal.js` template, since that template is also used by
-  `captain/` — this keeps the history section admin-only without adding a
-  dead, always-hidden container to captain's copy of the modal.
+  new history views above.
+- `admin/index.html`: added `shared/maintenance.js` as a script include
+  (`staff/` and `captain/` already had it).
 
 ## Unreleased (Supabase branch) — Bryggjan notification: someone joined your post
 

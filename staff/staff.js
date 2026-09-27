@@ -704,7 +704,7 @@ function openBoatActionCard(boat) {
   const toggleLabel = oos ? s('fleet.actionMarkAvail') : s('fleet.actionMarkOos');
   const toggleBtn = `<button class="btn btn-secondary" style="width:100%;font-size:13px;padding:10px" data-staff-click="_staffBoatToggle" data-staff-arg="${esc(boat.id)}">${toggleLabel}</button>`;
 
-  overlay.innerHTML = `<div class="modal" style="max-width:320px;padding:20px">
+  overlay.innerHTML = `<div class="modal" style="max-width:320px;padding:20px;max-height:85vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div style="font-size:15px;font-weight:600">${emoji} ${name}</div>
       <button style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted);padding:0 2px;line-height:1" data-staff-click="closeBoatActionCard">&times;</button>
@@ -714,9 +714,16 @@ function openBoatActionCard(boat) {
       ${maintBtn}
       ${toggleBtn}
     </div>
+    <div style="margin-top:16px">
+      <div style="font-size:9px;letter-spacing:1px;color:var(--muted);margin-bottom:6px">${s('boat.maintenanceHistory')}</div>
+      <div id="boatActionHistory"></div>
+    </div>
   </div>`;
 
   document.body.appendChild(overlay);
+  if (typeof mountBoatMaintHistory === 'function') {
+    mountBoatMaintHistory(document.getElementById('boatActionHistory'), boat.id, (typeof user !== 'undefined' && user) ? user.name : '');
+  }
 }
 
 function closeBoatActionCard() {

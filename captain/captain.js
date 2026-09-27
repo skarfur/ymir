@@ -401,7 +401,7 @@ function renderBoats() {
       }).join('');
     }
 
-    return '<div class="cq-boat">'
+    return '<div class="cq-boat" style="cursor:pointer" data-cq-click="openBoatCardHistory" data-cq-arg="'+esc(b.id)+'">'
       + '<div>'
         + '<div class="cq-boat-name">' + esc(boatEmoji(b.category)) + ' ' + esc(b.name)
           + (isControlled ? ' <span style="font-size:8px;letter-spacing:.5px;padding:2px 6px;border-radius:10px;border:1px solid var(--accent)44;background:var(--accent)11;color:var(--accent-fg)">' + esc(s('fleet.badgeControlled')) + '</span>' : '')
@@ -419,6 +419,11 @@ function renderBoats() {
       + resHtml
     + '</div>';
   }).join('') + addBtn;
+}
+
+function openBoatCardHistory(id) {
+  var b = _boats.find(function (x) { return x.id === id; });
+  if (b && typeof openBoatHistoryModal === 'function') openBoatHistoryModal(b, user.name);
 }
 
 var _portBoatId = null;
