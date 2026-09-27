@@ -467,7 +467,11 @@ async function saveBoat() {
   const accessModeVal = document.getElementById("bAccessMode").value;
   const controlled = accessModeVal === 'controlled';
   const gate = controlled ? _decodeGateValue(document.getElementById("bGateCert").value) : null;
-  const accessGateCert = gate ? (gate.sub || gate.certId) : '';
+  // Legacy flat fallback: must be the certId (cert_defs.id), not the sub
+  // key -- backend gate checks match access_gate_cert against certId when
+  // the structured accessGate isn't present. Storing the sub here (e.g.
+  // "captain" instead of "cert_mn9l9294") is what broke Sif/Gulla/Vogun.
+  const accessGateCert = gate ? gate.certId : '';
 
   const payload = {
     id: editingId || null,

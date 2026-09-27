@@ -5,6 +5,9 @@ const user = requireAuth();
 let _brgPosts = [];
 let _brgBoats = [];
 let _brgBoatsById = {};
+let _brgView = 'list';
+let _brgCalMonth = (function () { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })();
+let _brgSelectedDay = toLocalISODate(new Date());
 
 document.addEventListener('DOMContentLoaded', async () => {
   buildHeader('bryggjan');
@@ -60,9 +63,114 @@ async function loadBryggjanBoard() {
 }
 
 function renderBryggjanBoard() {
+  renderListView();
+  if (_brgView === 'calendar') renderCalendarView();
+}
+
+function renderListView() {
   const board = document.getElementById('brgBoard');
   document.getElementById('brgEmpty').classList.toggle('hidden', _brgPosts.length > 0);
   board.innerHTML = _brgPosts.map(renderBryggjanCard).join('');
+}
+
+function showBrgTab(tab) {
+  _brgView = tab;
+  document.querySelectorAll('.tab-bar .tab-btn').forEach(function (b) {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  document.getElementById('tab-list').classList.toggle('hidden', tab !== 'list');
+  document.getElementById('tab-calendar').classList.toggle('hidden', tab !== 'calendar');
+  if (tab === 'calendar') renderCalendarView();
+}
+
+function calNav(dir) {
+  if (dir === 'today') {
+    const d = new Date();
+    _brgCalMonth = { y: d.getFullYear(), m: d.getMonth() };
+    _brgSelectedDay = toLocalISODate(d);
+  } else {
+    let y = _brgCalMonth.y, m = _brgCalMonth.m + (dir === 'next' ? 1 : -1);
+    if (m < 0) { m = 11; y--; } else if (m > 11) { m = 0; y++; }
+    _brgCalMonth = { y, m };
+  }
+  renderCalendarView();
+}
+
+function selectCalDay(iso) {
+  _brgSelectedDay = iso;
+  renderCalendarView();
+}
+
+const _brgMonthKeys = ['month.jan', 'month.feb', 'month.mar', 'month.apr', 'month.may', 'month.jun',
+  'month.jul', 'month.aug', 'month.sep', 'month.oct', 'month.nov', 'month.dec'];
+const _brgDowKeys = ['day.mon', 'day.tue', 'day.wed', 'day.thu', 'day.fri', 'day.sat', 'day.sun'];
+
+function renderCalendarView() {
+  const grid = document.getElementById('brgCalGrid');
+  const titleEl = document.getElementById('brgCalTitle');
+  if (!grid || !titleEl) return;
+
+  const y = _brgCalMonth.y, m = _brgCalMonth.m;
+  titleEl.textContent = s(_brgMonthKeys[m]) + ' ' + y;
+
+  let html = _brgDowKeys.map(k => `<div class="brg-cal-dow">${s(k)}</div>`).join('');
+
+  const first = new Date(y, m, 1);
+  const dow0 = (first.getDay() + 6) % 7; // Mon=0..Sun=6
+  const startDate = new Date(y, m, 1 - dow0);
+  const todayIso = toLocalISODate(new Date());
+
+  const byDate = {};
+  _brgPosts.forEach(p => { (byDate[p.date] = byDate[p.date] || []).push(p); });
+
+  const myMemberId = user.id;
+  const maxShow = 2;
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(startDate);
+    d.setDate(startDate.getDate() + i);
+    const iso = toLocalISODate(d);
+    const isOther = d.getMonth() !== m;
+    const isToday = iso === todayIso;
+    const isSelected = iso === _brgSelectedDay;
+    const posts = byDate[iso] || [];
+
+    let evsHtml = '';
+    let dayHasMine = false;
+    posts.slice(0, maxShow).forEach(post => {
+      const signups = post.bryggjan_signups || [];
+      const isMine = post.organizer_member_id === myMemberId
+        || signups.some(su => su.member_id === myMemberId && (su.status === 'approved' || su.status === 'pending'));
+      if (isMine) dayHasMine = true;
+      const cls = isMine ? 'mine' : (post.status === 'full' ? 'full' : '');
+      const t = post.start_time ? sstr(post.start_time).slice(0, 5) + ' ' : '';
+      const lbl = t + _brgKindLabel(post.activity_kind) + (post.boat_name ? ' · ' + post.boat_name : '');
+      evsHtml += `<span class="brg-cal-ev ${cls}" data-brg-click="selectCalDay" data-brg-arg="${iso}" title="${esc(lbl)}">${esc(lbl)}</span>`;
+    });
+    if (posts.length > maxShow) {
+      evsHtml += `<span class="brg-cal-ev-more" data-brg-click="selectCalDay" data-brg-arg="${iso}">+${posts.length - maxShow} ${s('brg.more')}</span>`;
+    }
+
+    html += `<div class="brg-cal-day${isOther ? ' other-month' : ''}${isToday ? ' today' : ''}${isSelected ? ' selected' : ''}${dayHasMine ? ' has-mine' : ''}"`
+      + (posts.length ? ` data-brg-click="selectCalDay" data-brg-arg="${iso}"` : '') + '>'
+      + `<div class="brg-cal-day-num">${d.getDate()}</div>${evsHtml}</div>`;
+  }
+  grid.innerHTML = html;
+
+  renderCalDayPanel();
+}
+
+function renderCalDayPanel() {
+  const panel = document.getElementById('brgCalDayPanel');
+  if (!panel) return;
+  if (!_brgSelectedDay) { panel.innerHTML = ''; return; }
+  const posts = _brgPosts.filter(p => p.date === _brgSelectedDay)
+    .sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''));
+  const heading = `<div class="text-sm fw-500 mb-8">${esc(fmtDate(_brgSelectedDay))}</div>`;
+  if (!posts.length) {
+    panel.innerHTML = heading + `<div class="empty-note">${s('brg.emptyDay')}</div>`;
+    return;
+  }
+  panel.innerHTML = heading + `<div class="d-flex flex-col gap-10">${posts.map(renderBryggjanCard).join('')}</div>`;
 }
 
 function _brgKindLabel(kind) {
@@ -85,6 +193,12 @@ function renderBryggjanCard(post) {
   const when = post.start_time
     ? `${fmtDate(post.date)} · ${sstr(post.start_time).slice(0, 5)}${post.end_time ? '–' + sstr(post.end_time).slice(0, 5) : ''}`
     : fmtDate(post.date);
+
+  const rosterPct = Math.min(100, Math.round((approved.length / post.max_crew) * 100));
+  const rosterBarHtml = `<div class="brg-roster-bar mb-6" role="progressbar" aria-valuenow="${approved.length}" aria-valuemin="0" aria-valuemax="${post.max_crew}" aria-label="${esc(s('brg.crewCount', { filled: approved.length, max: post.max_crew }))}">
+    <div class="brg-roster-bar-track"><div class="brg-roster-bar-fill${rosterPct >= 100 ? ' full' : ''}" style="width:${rosterPct}%"></div></div>
+    <span class="brg-roster-bar-label">${approved.length}/${post.max_crew}</span>
+  </div>`;
 
   const rosterHtml = approved.map(su =>
     `<li>${esc(su.member_name)}${su.member_id === post.organizer_member_id ? ' ★' : ''}</li>`
@@ -127,7 +241,8 @@ function renderBryggjanCard(post) {
         ${badge}
       </div>
       ${post.title ? `<div class="mb-3">${esc(post.title)}</div>` : ''}
-      <div class="text-sm text-muted mb-6">${esc(when)} · ${s('brg.organizer')}: ${esc(post.organizer_name)} · ${approved.length}/${post.max_crew}</div>
+      <div class="text-sm text-muted mb-3">${esc(when)} · ${s('brg.organizer')}: ${esc(post.organizer_name)}</div>
+      ${rosterBarHtml}
       ${post.note ? `<div class="text-sm mb-6">${esc(post.note)}</div>` : ''}
       ${rosterHtml ? `<ul class="brg-roster-list mb-6">${rosterHtml}</ul>` : ''}
       ${pendingHtml}

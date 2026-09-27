@@ -3,6 +3,38 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — Bryggjan follow-ups: boat-gate fix, calendar view
+
+- **Fix**: `member_satisfies_boat_gate_()` (Bryggjan's boat cert-gate check)
+  compared a controlled boat's legacy `access_gate_cert` directly against
+  each member's `certId`, but three boats (Sif, Gulla, Vogun) predate the
+  structured `access_gate` column and only ever had a bare subcat key
+  stored there (e.g. `'captain'`, not the real certId `'cert_mn9l9294'`) —
+  so no member, however qualified, could ever pass the gate. This is what
+  blocked Steve Shema, a Captain-certified member, from organizing a Sif
+  post. `20260927184453_fix_boat_gate_legacy_cert.sql` rewrites the
+  function to resolve the legacy string the same way
+  `shared/boats.js`'s `normalizeAccessGate()`/`memberHasGate()` already do
+  on the frontend (subcat-key match, then def-id match, then sub-only
+  fallback), and also fixes a second latent bug: the function's `minRank`
+  lookup read `app_config` for a `'certDefs'` key that no longer exists
+  (certDefs moved to the `cert_defs` table on 2026-09-22, before this
+  function was even written) — ranked gates could never be satisfied by
+  anyone. `20260927184830_backfill_legacy_boat_gates.sql` backfills the
+  structured `access_gate` on those three boats so their data matches
+  every other boat going forward.
+- **Fix**: `admin/boats.js`'s `saveBoat()` wrote the legacy
+  `accessGateCert` fallback as `gate.sub || gate.certId` — backwards, since
+  every consumer treats that field as a certId. Re-saving a boat with a
+  sub-level cert gate selected would have reintroduced the same bug this
+  migration just fixed. Now writes `gate.certId`.
+- `bryggjan/`: added a Calendar view (month grid, day chips, click a day
+  to see full post cards below) alongside the existing List view, switched
+  via a `.tab-bar` (reuses `Layout.annotateTabBars()` for keyboard/ARIA
+  tab semantics — see CLAUDE.md's "Event handling" section). The roster
+  count on each post card is now a small progress bar instead of a bare
+  "n/n" string.
+
 ## Unreleased (Supabase branch) — Bryggjan: ad hoc crew/activity board
 
 New portal: `bryggjan/` ("The Pier") — a member proposes a slot (sailing,

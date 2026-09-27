@@ -28,17 +28,39 @@
     <button class="btn btn-primary" data-brg-click="openCreatePost" data-s="brg.newPost"></button>
   </div>
 
-  <!-- ══ BOARD ══ -->
-  <div id="brgBoard" class="d-flex flex-col gap-10"></div>
-
-  <!-- ══ EMPTY STATE ══ -->
-  <div id="brgEmpty" class="mt-16 hidden">
-    <div class="empty-note" data-s="brg.empty"></div>
-  </div>
-
   <!-- ══ LOADING STATE ══ -->
   <div id="brgLoading" class="mt-16">
     <div class="loading-state"><span class="spinner"></span></div>
+  </div>
+
+  <!-- ══ TAB BAR ══ -->
+  <div class="tab-bar mb-10">
+    <button class="tab-btn active" data-tab="list" data-brg-click="showBrgTab" data-brg-arg="list" data-s="brg.tabList"></button>
+    <button class="tab-btn" data-tab="calendar" data-brg-click="showBrgTab" data-brg-arg="calendar" data-s="brg.tabCalendar"></button>
+  </div>
+
+  <!-- ══ LIST VIEW ══ -->
+  <div id="tab-list">
+    <div id="brgBoard" class="d-flex flex-col gap-10"></div>
+    <div id="brgEmpty" class="mt-16 hidden">
+      <div class="empty-note" data-s="brg.empty"></div>
+    </div>
+  </div>
+
+  <!-- ══ CALENDAR VIEW ══ -->
+  <div id="tab-calendar" class="hidden">
+    <div class="brg-cal" id="brgCalendar">
+      <div class="brg-cal-hdr">
+        <div class="brg-cal-title" id="brgCalTitle">—</div>
+        <div class="brg-cal-nav">
+          <button data-brg-click="calNav" data-brg-arg="prev">‹</button>
+          <button data-brg-click="calNav" data-brg-arg="today" data-s="slot.today"></button>
+          <button data-brg-click="calNav" data-brg-arg="next">›</button>
+        </div>
+      </div>
+      <div class="brg-cal-grid" id="brgCalGrid"></div>
+    </div>
+    <div id="brgCalDayPanel" class="mt-16"></div>
   </div>
 
 </div>
