@@ -1,18 +1,4 @@
-/* ── Tab bar ── */
-    .tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; overflow-x:auto; }
-    .tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
-      font-family:inherit; font-size:11px; letter-spacing:.6px; padding:10px 16px; cursor:pointer;
-      margin-bottom:-1px; transition:color .2s,border-color .2s; white-space:nowrap; }
-    .tab-btn.active { color:var(--accent-fg); border-bottom-color:var(--accent); }
-    .tab-btn:hover:not(.active) { color:var(--text); }
-
-    /* ── Tab dropdown (mobile) ──
-       Only declares display + spacing. All other look-and-feel (border, bg,
-       chevron, padding, font) is inherited from the shared `select` rule so
-       the caret stays theme-aware and doesn't tile into a wave pattern. */
-    .tab-select { display:none; margin-bottom:20px; }
-
-    /* ── Collapsible section ── */
+/* ── Collapsible section ── */
     .col-section { margin-bottom:16px; }
     .col-head { display:flex; align-items:center; justify-content:space-between;
       padding:10px 14px; background:var(--surface); border:1px solid var(--border);
@@ -25,13 +11,6 @@
     .col-toggle.open { transform:rotate(180deg); }
     .col-body { border:1px solid var(--border); border-top:none; border-radius:0 0 var(--radius-md) var(--radius-md);
       padding:14px 16px; background:var(--card); box-shadow:var(--shadow-sm); }
-
-    /* ── Member rows ── */
-    .member-row { display:flex; align-items:center; gap:10px; padding:9px 0;
-      border-bottom:1px solid var(--border)44; font-size:12px; }
-    .member-row:last-child { border-bottom:none; }
-    .member-name { font-weight:500; flex:1; color:var(--text); }
-    .member-kt   { color:var(--muted); font-size:11px; width:88px; flex-shrink:0; }
 
     /* ── Boat cards ── */
     .boat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; }
@@ -141,10 +120,6 @@
 
     /* ── Responsive ── */
     @media(max-width:600px){
-      #settingsTabBar{display:none}
-      .tab-select{display:block}
-      .tab-btn{padding:8px 10px;font-size:10px;letter-spacing:.5px}
-      .member-kt{width:auto}
       .cl-phase{width:40px;font-size:9px}
       .col-hint-field{width:auto}
       .col-hint-row{flex-direction:column;gap:2px}
@@ -319,3 +294,109 @@
   cursor: pointer;
   padding: 2px 0;
 }
+
+/* ══ Shell: grouped sidebar nav + content ═══════════════════════════════════
+   Desktop (≥900px): sticky sidebar. Narrow: #adminNavSelect + search button.
+   Group headings use the shared .section-label. */
+main.admin-main { max-width: 1320px; }
+.admin-shell { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 28px; align-items: start; }
+.admin-content { min-width: 0; }
+.admin-nav { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 2px;
+  max-height: calc(100vh - 32px); overflow-y: auto; padding-bottom: 12px; }
+.admin-nav .section-label { margin: 14px 10px 4px; }
+
+/* Shared by sidebar items, list rows and quick-search results. */
+.admin-nav-item, .mem-row, .cmdk-item { display: flex; align-items: center; gap: 10px; width: 100%;
+  text-align: left; background: none; border: none; font-family: inherit; font-size: 13px;
+  color: var(--text); cursor: pointer; transition: background-color .12s; }
+.admin-nav-item:hover, .mem-row:hover { background: var(--faint); }
+.admin-nav-item.active, .mem-row.selected, .cmdk-item:hover, .cmdk-item.active { background: var(--accent-tint-sm); }
+.admin-nav-item:focus-visible, .admin-nav-search:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.mem-row:focus-visible { outline: none; box-shadow: inset var(--focus-ring); }
+
+.admin-nav-item { border-radius: var(--radius-sm); padding: 8px 10px; }
+.admin-nav-item.active { color: var(--accent-fg); font-weight: 600; }
+.admin-nav-search { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius-md); padding: 8px 10px;
+  font-family: inherit; font-size: 12px; color: var(--muted); cursor: pointer; text-align: left; }
+.admin-nav-search:hover { border-color: var(--accent); color: var(--text); }
+.admin-kbd { font-family: var(--font-mono); font-size: 10px; border: 1px solid var(--border);
+  border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
+.admin-nav-mobile { display: none; gap: 8px; margin-bottom: 16px; }
+
+/* ══ Members: list + detail split ═════════════════════════════════════════
+   Panes are .card; chips are .day-pill; flags/tags are .badge-*. */
+.mem-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.mem-chips .day-pill { font-size: 12px; padding: 5px 12px; }
+.mem-chip-n { font-family: var(--font-mono); opacity: .75; margin-left: 2px; }
+.mem-split { display: grid; grid-template-columns: minmax(260px, 360px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.mem-split > .card, .mem-cards > .card { margin: 0; }
+.mem-list-pane { padding: 0; overflow: hidden; }
+.mem-list-head { display: flex; justify-content: space-between; margin: 0; padding: 10px 14px;
+  border-bottom: 1px solid var(--border); }
+.mem-list-head strong { font-family: var(--font-mono); color: var(--text); }
+.mem-list { max-height: calc(100vh - 220px); overflow-y: auto; }
+
+.mem-row { border-bottom: 1px solid var(--border); border-left: 3px solid transparent; padding: 9px 12px 9px 11px; }
+.mem-row:last-of-type { border-bottom: none; }
+.mem-row.selected { border-left-color: var(--accent); }
+.mem-row--inactive .mem-row-main, .mem-row--inactive .mem-avatar { opacity: .55; }
+.mem-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mem-row-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mem-row-sub { font-size: 11px; color: var(--muted); }
+
+.mem-avatar { flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; display: inline-flex;
+  align-items: center; justify-content: center; background: var(--faint); font-size: 11px; font-weight: 600; }
+.mem-row.selected .mem-avatar, .mem-avatar--lg { background: var(--accent); color: var(--bg); }
+.mem-avatar--lg { width: 56px; height: 56px; font-size: 18px; }
+
+.mem-detail { min-height: 240px; }
+.mem-detail-empty { color: var(--muted); text-align: center; padding: 80px 12px; }
+.mem-detail-back { display: none; margin-bottom: 12px; }
+.mem-detail-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.mem-detail-id { flex: 1; min-width: 0; }
+.mem-detail-name { font-size: 20px; font-weight: 600; overflow-wrap: anywhere; }
+.mem-detail-name:focus { outline: none; }
+.mem-detail-actions, .mem-tags, .mem-cert-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.mem-detail-actions { gap: 8px; }
+.mem-tags { margin: 14px 0 16px; }
+.mem-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.mem-card--wide { grid-column: 1 / -1; }
+.mem-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.mem-card-head .section-label { margin: 0; }
+.mem-dl-row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0;
+  border-bottom: 1px solid var(--border); font-size: 13px; }
+.mem-dl-row:last-child { border-bottom: none; }
+.mem-dl-row dt { color: var(--muted); }
+.mem-dl-row dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+.mem-dl-row a { color: var(--accent-fg); }
+
+@media (max-width: 899px) {
+  .admin-shell, .mem-split, .mem-cards { grid-template-columns: minmax(0, 1fr); }
+  .admin-shell { gap: 0; }
+  .admin-nav, .mem-split .mem-detail, .mem-split.has-detail .mem-list-pane { display: none; }
+  .admin-nav-mobile { display: flex; }
+  .mem-split.has-detail .mem-detail { display: block; scroll-margin-top: 72px; }
+  .mem-detail-back { display: inline-flex; }
+  .mem-list { max-height: none; }
+  .mem-detail-actions { width: 100%; }
+  .mem-detail-actions .btn { flex: 1; }
+}
+@media (max-width: 600px) {
+  .mem-toolbar .search-bar { flex-basis: 100%; }
+}
+
+/* ══ Quick search (⌘K) ═════════════════════════════════════════════════════ */
+#cmdkModal { align-items: flex-start; padding-top: 12vh; }
+.modal.cmdk { max-width: 560px; padding: 0; overflow: hidden; }
+.cmdk-input-row { display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+  border-bottom: 1px solid var(--border); color: var(--muted); }
+.cmdk-input { flex: 1; border: none !important; background: none !important; box-shadow: none !important;
+  font-size: 15px; padding: 4px 0 !important; }
+.cmdk-list { max-height: 50vh; overflow-y: auto; padding: 6px; }
+.cmdk-item { justify-content: space-between; border-radius: var(--radius-sm); padding: 9px 12px; }
+.cmdk-item-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmdk-item-kind { flex-shrink: 0; font-size: 11px; color: var(--muted); }
+.cmdk-empty, .cmdk-foot { padding: 12px 16px; color: var(--muted); font-size: 12px; }
+.cmdk-empty { text-align: center; }
+.cmdk-foot { border-top: 1px solid var(--border); padding-block: 8px; }
