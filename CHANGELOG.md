@@ -3,6 +3,34 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — admin: grouped sidebar, member list + detail, quick search
+
+Frontend-only redesign of the admin shell (option "J" from the UI-alternatives
+canvas). No backend, Edge Function or migration changes.
+
+- `admin/index.html`, `admin/admin.js`: one grouped sidebar (People, On the
+  water, Club, Staff) replaces the Members/Settings/Payroll tab bar and the
+  Settings sub-tab bar; below 900px it collapses to a grouped `<select>` plus
+  a search button. `adminNav(section)` is the new entry point;
+  `showTopTab` / `showTab` still work and `?top=&tab=` deep links are
+  unchanged. The "Other" settings tab sits under Club.
+- `admin/members.js`: members become a list + detail split. Filter chips with
+  live counts: All (default — keeps this branch's "show inactive members too"
+  behaviour), Active, Staff, Youth, Credentials expiring (≤60 days), Inactive.
+  Rows show initials, role, minor/inactive markers and a credential flag;
+  inactive rows are dimmed. The detail pane shows contact (incl. birth year),
+  account, credentials and guardian (`guardianKennitala`), with Edit /
+  Credentials / Issue temporary password. Keeps the hyphen-tolerant kennitala
+  search, render-time locale sort and the scroll-sentinel re-observe fix.
+  Accepts certifications as an array (Supabase) or a JSON string (Sheets).
+  Credential edits in the shared modal refresh the list via `mcmOnUpdate`.
+- `admin/quicksearch.js` (new): ⌘K / Ctrl+K quick search across sections,
+  members (name, kennitala, email) and boats.
+- `admin/admin.css`: built on shared `.card`, `.section-label`, `.badge-*`,
+  `.day-pill`; drops the now-unused `.tab-bar` / `.tab-btn` / `.tab-select`
+  and `.member-row` rules.
+- `shared/strings-{en,is}.js`: `admin.nav.*`, `admin.cmdk.*`, `admin.mem.*`.
+
 ## Unreleased (Supabase branch) — Fix: staff Fleet card click did nothing
 
 - `staff/staff.js`: **fix** — clicking a boat card on the staff Fleet grid

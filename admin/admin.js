@@ -58,9 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
   ].forEach(id => { if (typeof guardUnsavedChanges === 'function') guardUnsavedChanges(id); });
   loadAll().then(() => {
     const p = new URLSearchParams(window.location.search);
-    const top = p.get('top') || 'members';
-    showTopTab(top);
-    if (top === 'settings') showTab(p.get('tab') || 'boats');
+    showTopTab(p.get('top') || 'members', p.get('tab'));
   });
 
   document.getElementById("bOOS").addEventListener("change", e => {
@@ -149,6 +147,9 @@ function _adminWireStrings() {
   if (bOwnerSearch) bOwnerSearch.placeholder = s('admin.searchMember');
   const mInitials = document.getElementById('mInitials');
   if (mInitials) mInitials.placeholder = s('admin.initialsPlaceholder');
+  // Quick-search shortcut hint: ⌘K on Apple platforms, Ctrl K elsewhere.
+  const kbd = document.getElementById('cmdkHint');
+  if (kbd && !/Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent || '')) kbd.textContent = 'Ctrl K';
 }
 
 // ── Collapsible sections ───────────────────────────────────────────────────────
@@ -161,18 +162,39 @@ function toggleSection(head) {
   toggle.classList.toggle("open", !isOpen);
 }
 
-// ── Top-level tab switching ────────────────────────────────────────────────────
-function showTopTab(top) {
-  document.querySelectorAll('#topTabBar .tab-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.top === top);
+// ── Section navigation ────────────────────────────────────────────────────────
+// The sidebar (desktop) and #adminNavSelect (mobile) name sections directly.
+// Members and Payroll are their own top-level panels; every other section is a
+// sub-tab inside #top-settings. URL params keep the historical ?top=&tab= shape
+// so existing deep links keep working.
+const ADMIN_SETTINGS_TABS = ['boats','locations','checklists','scheduling','certs','flags','alerts','passport','handbook','other'];
+let _lastSettingsTab = 'boats';
+
+function adminNav(section) {
+  if (ADMIN_SETTINGS_TABS.includes(section)) showTopTab('settings', section);
+  else showTopTab(section);
+}
+
+function _setNavActive(section) {
+  document.querySelectorAll('#adminNav .admin-nav-item').forEach(b => {
+    const on = b.dataset.nav === section;
+    b.classList.toggle('active', on);
+    if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
-  document.getElementById('top-members').classList.toggle('hidden', top !== 'members');
-  document.getElementById('top-settings').classList.toggle('hidden', top !== 'settings');
-  document.getElementById('top-payroll').classList.toggle('hidden', top !== 'payroll');
+  const sel = document.getElementById('adminNavSelect');
+  if (sel) sel.value = section;
+}
+
+function showTopTab(top, tab) {
+  if (!['members','settings','payroll'].includes(top)) top = 'members';
+  ['members','settings','payroll'].forEach(t => {
+    document.getElementById('top-' + t).classList.toggle('hidden', t !== top);
+  });
   if (top === 'settings') {
-    const active = document.querySelector('#settingsTabBar .tab-btn.active');
-    showTab(active ? active.dataset.tab : 'boats');
+    _showSettingsTab(ADMIN_SETTINGS_TABS.includes(tab) ? tab : _lastSettingsTab);
+    return;
   }
+  _setNavActive(top);
   if (top === 'payroll') {
     const frame = document.getElementById('payrollFrame');
     if (frame.src === 'about:blank' || !frame.src.includes('payroll/')) {
@@ -181,21 +203,20 @@ function showTopTab(top) {
   }
   const url = new URL(window.location.href);
   url.searchParams.set('top', top);
-  if (top !== 'settings') url.searchParams.delete('tab');
+  url.searchParams.delete('tab');
   history.replaceState(null, '', url);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ── Settings sub-tab switching ─────────────────────────────────────────────────
-function showTab(tab) {
+// Kept as a public entry point: other modules call showTab('<sub-tab>').
+function showTab(tab) { showTopTab('settings', tab); }
+
+function _showSettingsTab(tab) {
+  _lastSettingsTab = tab;
   document.querySelectorAll('#top-settings > [id^="tab-"]').forEach(el => el.classList.add('hidden'));
-  document.querySelectorAll('#settingsTabBar .tab-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.tab === tab);
-  });
-  const sel = document.getElementById('settingsTabSelect');
-  if (sel) sel.value = tab;
   const el = document.getElementById('tab-' + tab);
   if (el) el.classList.remove('hidden');
+  _setNavActive(tab);
 
   if (tab === 'certs') renderCertDefs();
   if (tab === 'scheduling') { renderSchedulingTab(); initSlotCalendar(); }
@@ -203,6 +224,7 @@ function showTab(tab) {
   if (tab === 'handbook') renderHandbookAdmin();
 
   const url = new URL(window.location.href);
+  url.searchParams.set('top', 'settings');
   url.searchParams.set('tab', tab);
   history.replaceState(null, '', url);
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -406,6 +428,17 @@ function _removeElementById(id) { var e = document.getElementById(id); if (e) e.
     if (c && typeof window[c.dataset.adminChange] === 'function') {
       window[c.dataset.adminChange]();
     }
+  });
+
+  // Quick search: ⌘K / Ctrl+K opens it from anywhere; arrows + Enter drive
+  // the result list while its input has focus.
+  document.addEventListener('keydown', function (e) {
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      if (typeof openCmdK === 'function') openCmdK();
+      return;
+    }
+    if (e.target && e.target.id === 'cmdkInput' && typeof cmdkKey === 'function') cmdkKey(e);
   });
 
   document.addEventListener('input', function (e) {

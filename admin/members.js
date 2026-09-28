@@ -5,25 +5,106 @@
 // binds to window and is visible from the other admin-tab modules.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function filterMembers() {
-  const q = document.getElementById("memberSearch").value.trim().toLowerCase();
-  // Kennitala is stored as 10 raw digits, but an admin pasting one from
-  // elsewhere often carries the display hyphen ("010190-1234") — strip
-  // non-digits from the query for the kennitala side of the match so that
-  // still matches, without affecting the name-substring side.
-  const qDigits = q.replace(/\D/g, '');
-  const matches = members.filter(m =>
-    String(m.name||"").toLowerCase().includes(q) ||
-    (qDigits && String(m.kennitala||"").includes(qDigits)));
-  renderMemberList(matches);
+// ── Filters ─────────────────────────────────────────────────────────────────
+// Chip filters narrow the list before the search box does. Counts on each chip
+// are recomputed on every render so they stay honest after edits.
+var _memberFilter   = 'all';
+var _selectedMember = null;
+var _CERT_WARN_DAYS = 60;
+
+var _MEMBER_FILTERS = [
+  { key: 'all',      label: 'admin.mem.fAll',      test: function ()  { return true; } },
+  { key: 'active',   label: 'admin.mem.fActive',   test: function (m) { return bool(m.active); } },
+  { key: 'staff',    label: 'admin.mem.fStaff',    test: function (m) { return bool(m.active) && (m.role === 'staff' || m.role === 'admin'); } },
+  { key: 'youth',    label: 'admin.mem.fYouth',    test: function (m) { return bool(m.active) && _memberIsMinor(m); } },
+  { key: 'certs',    label: 'admin.mem.fCerts',    test: function (m) { return bool(m.active) && !!_memberCertStatus(m); } },
+  { key: 'inactive', label: 'admin.mem.fInactive', test: function (m) { return !bool(m.active); } },
+];
+
+// isMinor is computed server-side from birthYear; guardian presence is the
+// fallback for rows that carry a guardian but no birth year.
+function _memberIsMinor(m) {
+  return !!m.isMinor || !!String(m.guardianKennitala || '').trim();
 }
 
+// Certifications arrive as an array from Supabase (a JSON string in the
+// legacy Sheets shape) — accept both.
+function _memberCerts(m) {
+  return typeof m.certifications === 'string' ? parseJson(m.certifications, []) : (m.certifications || []);
+}
+
+// '' | 'expiring' | 'expired' — the worst state across the member's credentials.
+function _memberCertStatus(m) {
+  var certs = _memberCerts(m);
+  if (!certs.length) return '';
+  var today = todayISO();
+  var soon = new Date(); soon.setDate(soon.getDate() + _CERT_WARN_DAYS);
+  var soonISO = soon.toISOString().slice(0, 10);
+  var worst = '';
+  certs.forEach(function (c) {
+    if (!c.expiresAt) return;
+    if (c.expiresAt < today) worst = 'expired';
+    else if (c.expiresAt <= soonISO && worst !== 'expired') worst = 'expiring';
+  });
+  return worst;
+}
+
+function _memberInitials(m) {
+  if (m.initials) return String(m.initials).slice(0, 3).toUpperCase();
+  var parts = String(m.name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  return ((parts[0][0] || '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+}
+
+function _memberRoleLabel(role) {
+  if (role === 'admin') return s('admin.mem.roleAdmin');
+  if (role === 'staff') return s('admin.mem.roleStaff');
+  if (role === 'guardian') return s('lbl.guardian');
+  return s('lbl.member');
+}
+
+function setMemberFilter(key) {
+  _memberFilter = key;
+  renderMembers();
+}
+
+function renderMemberChips() {
+  var box = document.getElementById('memberChips');
+  if (!box) return;
+  box.innerHTML = _MEMBER_FILTERS.map(function (f) {
+    var n = members.filter(f.test).length;
+    var on = f.key === _memberFilter;
+    return '<button type="button" class="day-pill' + (on ? ' on' : '') + '" aria-pressed="' + on + '"' +
+      ' data-admin-click="setMemberFilter" data-admin-arg="' + f.key + '">' +
+      esc(s(f.label)) + ' <span class="mem-chip-n">' + n + '</span></button>';
+  }).join('');
+}
+
+function _filteredMembers() {
+  var f = _MEMBER_FILTERS.find(function (x) { return x.key === _memberFilter; }) || _MEMBER_FILTERS[0];
+  var q = (document.getElementById('memberSearch').value || '').toLowerCase().trim();
+  // Kennitala is stored as 10 raw digits; strip a pasted display hyphen
+  // ("010190-1234") for the kennitala side of the match.
+  var qDigits = q.replace(/\D/g, '');
+  return members.filter(function (m) {
+    if (!f.test(m)) return false;
+    if (!q) return true;
+    return String(m.name || '').toLowerCase().includes(q) ||
+           (qDigits && String(m.kennitala || '').includes(qDigits)) ||
+           String(m.email || '').toLowerCase().includes(q);
+  });
+}
+
+function filterMembers() { renderMembers(); }
+
 function renderMembers() {
-  // Shows every member, active or not — an admin needs to find and manage
-  // (e.g. reactivate) a deactivated member just as much as an active one.
-  // Row rendering marks inactive members so the distinction stays visible.
-  document.getElementById("memberCountLabel").textContent = `(${members.length})`;
-  renderMemberList(members);
+  renderMemberChips();
+  var list = _filteredMembers();
+  document.getElementById('memberCountLabel').textContent = list.length;
+  renderMemberList(list);
+  // Drop a selection that no longer exists in the members array.
+  if (_selectedMember && !members.some(function (m) { return m.id === _selectedMember; })) _selectedMember = null;
+  renderMemberDetail();
 }
 
 var _memberListData = [];
@@ -36,9 +117,7 @@ function renderMemberList(list) {
   const card = document.getElementById("membersCard");
   if (!list.length) { card.innerHTML = `<div class="empty-state">${s('admin.noMembers')}</div>`; return; }
   // Re-sort at render time, not just once on load: saveMember/confirmImport
-  // append new/updated rows to the end of the members array, which would
-  // otherwise leave the visible list out of alphabetical order until the
-  // next full page reload.
+  // append new/updated rows to the end of the members array.
   const _mLocale = getLang() === 'IS' ? 'is' : 'en';
   list = list.slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', _mLocale, { sensitivity: 'base' }));
   _memberListData = list;
@@ -54,16 +133,22 @@ function _renderMemberBatch(card) {
   var frag = document.createDocumentFragment();
   for (var i = _memberRendered; i < end; i++) {
     var m = _memberListData[i];
-    var row = document.createElement('div');
-    row.className = 'member-row';
-    var isInactive = !bool(m.active);
+    var name = (_memberDupNames && _memberDupNames.has(m.name) && m.birthYear) ? (m.name + ' (' + m.birthYear + ')') : (m.name || '—');
+    var cert = _memberCertStatus(m);
+    var flag = cert === 'expired'  ? `<span class="badge badge-red">${esc(s('admin.mem.certExpired'))}</span>`
+             : cert === 'expiring' ? `<span class="badge badge-yellow">${esc(s('admin.mem.certExpiring'))}</span>`
+             : '';
+    var row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'mem-row' + (m.id === _selectedMember ? ' selected' : '') + (bool(m.active) ? '' : ' mem-row--inactive');
+    row.dataset.adminClick = 'selectMember';
+    row.dataset.adminArg = m.id;
+    if (m.id === _selectedMember) row.setAttribute('aria-current', 'true');
     row.innerHTML =
-      `<span class="member-name"${isInactive ? ' style="opacity:.55"' : ''}>${esc((_memberDupNames && _memberDupNames.has(m.name) && m.birthYear) ? (m.name + ' (' + m.birthYear + ')') : (m.name || "—"))}` +
-        (isInactive ? ` <span style="color:var(--muted);font-size:10px;font-weight:400">(${s('lbl.inactive')})</span>` : '') +
-      `</span>` +
-      `<span class="member-kt">${esc(m.kennitala || "")}</span>` +
-      `<button class="row-edit" data-admin-click="openMemberModal" data-admin-arg="${m.id}">Edit</button>` +
-      `<button class="row-edit" data-admin-click="openMemberCertModal" data-admin-arg="${m.id}" style="font-size:10px">${s('admin.manageCreds')}</button>`;
+      `<span class="mem-avatar" aria-hidden="true">${esc(_memberInitials(m))}</span>` +
+      `<span class="mem-row-main"><span class="mem-row-name">${esc(name)}</span>` +
+      `<span class="mem-row-sub">${esc(_memberRoleLabel(m.role))}${_memberIsMinor(m) ? ' · ' + esc(s('admin.mem.minor')) : ''}${bool(m.active) ? '' : ' · ' + esc(s('lbl.inactive'))}</span></span>` +
+      flag;
     frag.appendChild(row);
   }
   var oldSentinel = card.querySelector('.member-scroll-sentinel');
@@ -75,15 +160,112 @@ function _renderMemberBatch(card) {
     sentinel.className = 'member-scroll-sentinel';
     sentinel.style.height = '1px';
     card.appendChild(sentinel);
-    // The old sentinel node (which _memberObserver was watching) was just
-    // removed above and replaced with this new one — an IntersectionObserver
-    // only watches the exact node passed to observe(), so without
-    // re-observing here, every batch past the second stops loading (the
-    // observer keeps firing off a detached node that can never intersect
-    // again). This is what capped the list at 2 batches.
+    // The observer only watches the exact node passed to observe(); the old
+    // sentinel was just removed, so re-observe or the list stops at 2 batches.
     if (_memberObserver) _memberObserver.observe(sentinel);
   }
 }
+
+// ── Detail pane ─────────────────────────────────────────────────────────────
+function selectMember(id) {
+  _selectedMember = id || null;
+  document.querySelectorAll('#membersCard .mem-row').forEach(function (r) {
+    var on = r.dataset.adminArg === _selectedMember;
+    r.classList.toggle('selected', on);
+    if (on) r.setAttribute('aria-current', 'true'); else r.removeAttribute('aria-current');
+  });
+  renderMemberDetail();
+  // Narrow screens show one pane at a time — bring the detail into view.
+  if (_selectedMember && window.matchMedia('(max-width: 899px)').matches) {
+    var d = document.getElementById('memberDetail');
+    if (d) { d.scrollIntoView({ block: 'start' }); var h = d.querySelector('h2'); if (h) h.focus({ preventScroll: true }); }
+  }
+}
+
+function closeMemberDetail() {
+  var id = _selectedMember;
+  selectMember(null);
+  var row = id && document.querySelector('#membersCard .mem-row[data-admin-arg="' + CSS.escape(id) + '"]');
+  if (row) row.focus();
+}
+
+function _detailRow(label, valueHtml) {
+  return `<div class="mem-dl-row"><dt>${esc(label)}</dt><dd>${valueHtml || '<span class="text-muted">—</span>'}</dd></div>`;
+}
+
+function renderMemberDetail() {
+  var split = document.getElementById('memberSplit');
+  var box = document.getElementById('memberDetail');
+  if (!box) return;
+  var m = _selectedMember ? members.find(function (x) { return x.id === _selectedMember; }) : null;
+  if (split) split.classList.toggle('has-detail', !!m);
+  if (!m) {
+    box.innerHTML = `<div class="mem-detail-empty">${esc(s('admin.mem.selectPrompt'))}</div>`;
+    return;
+  }
+  var id = esc(m.id);
+  var chips = [`<span class="badge badge-accent">${esc(_memberRoleLabel(m.role))}</span>`];
+  if (!bool(m.active)) chips.push(`<span class="badge badge-muted">${esc(s('admin.mem.fInactive'))}</span>`);
+  if (_memberIsMinor(m)) chips.push(`<span class="badge badge-yellow">${esc(s('admin.mem.minor'))}</span>`);
+
+  var certs = enrichMemberCerts(_memberCerts(m), certDefs, certCategories);
+  var certHtml = certs.length
+    ? `<div class="mem-cert-list">${certs.map(certBadgeHTML).join('')}</div>`
+    : `<div class="text-sm text-muted">${esc(s('admin.mem.noCerts'))}</div>`;
+
+  var email = m.email ? `<a href="mailto:${esc(m.email)}">${esc(m.email)}</a>` : '';
+  var phone = m.phone ? `<a href="tel:${esc(m.phone)}">${esc(m.phone)}</a>` : '';
+  var hasGuardian = m.guardianName || m.guardianKennitala || m.guardianPhone;
+
+  box.innerHTML =
+    `<button type="button" class="btn-ghost mem-detail-back" data-admin-click="closeMemberDetail">← ${esc(s('admin.mem.backToList'))}</button>` +
+    `<div class="mem-detail-head">` +
+      `<span class="mem-avatar mem-avatar--lg" aria-hidden="true">${esc(_memberInitials(m))}</span>` +
+      `<div class="mem-detail-id"><h2 class="mem-detail-name" tabindex="-1">${esc(m.name || '—')}</h2>` +
+      `<div class="text-sm text-muted">${esc(m.kennitala || '')}</div></div>` +
+      `<div class="mem-detail-actions">` +
+        `<button type="button" class="btn btn-secondary" data-admin-click="openMemberCertModal" data-admin-arg="${id}">${esc(s('admin.manageCreds'))}</button>` +
+        `<button type="button" class="btn btn-primary" data-admin-click="openMemberModal" data-admin-arg="${id}">${esc(s('btn.edit'))}</button>` +
+      `</div>` +
+    `</div>` +
+    `<div class="mem-tags">${chips.join('')}</div>` +
+    `<div class="mem-cards">` +
+      `<section class="card card--sm card--surface"><h3 class="section-label">${esc(s('admin.mem.contact'))}</h3><dl>` +
+        _detailRow(s('lbl.email'), email) +
+        _detailRow(s('lbl.phone'), phone) +
+        _detailRow(s('admin.mem.birthYear'), esc(m.birthYear || '')) +
+        _detailRow(s('admin.initials'), esc(m.initials || '')) +
+      `</dl></section>` +
+      `<section class="card card--sm card--surface"><h3 class="section-label">${esc(s('admin.mem.account'))}</h3><dl>` +
+        _detailRow(s('lbl.role'), esc(_memberRoleLabel(m.role))) +
+        _detailRow(s('admin.password'), esc(m.hasPassword ? s('admin.hasCustomPassword') : s('admin.usingDefaultPassword'))) +
+      `</dl>` +
+        `<button type="button" class="btn btn-ghost mt-8" data-admin-click="resetMemberPasswordFor" data-admin-arg="${id}">${esc(s('admin.resetPassword'))}</button>` +
+      `</section>` +
+      `<section class="card card--sm card--surface mem-card--wide"><div class="mem-card-head"><h3 class="section-label">${esc(s('admin.tabCerts'))}</h3>` +
+        `<button type="button" class="btn-ghost" data-admin-click="openMemberCertModal" data-admin-arg="${id}">${esc(s('admin.mem.manage'))}</button></div>` +
+        certHtml +
+      `</section>` +
+      (hasGuardian
+        ? `<section class="card card--sm card--surface"><h3 class="section-label">${esc(s('lbl.guardian'))}</h3><dl>` +
+            _detailRow(s('lbl.name'), esc(m.guardianName || '')) +
+            _detailRow(s('admin.kennitala'), esc(m.guardianKennitala || '')) +
+            _detailRow(s('lbl.phone'), m.guardianPhone ? `<a href="tel:${esc(m.guardianPhone)}">${esc(m.guardianPhone)}</a>` : '') +
+          `</dl></section>`
+        : '') +
+    `</div>`;
+}
+
+// Reset from the detail pane reuses the modal's reset flow, which keys off
+// editingId and updates the (hidden) modal's status line.
+async function resetMemberPasswordFor(id) {
+  editingId = id;
+  await resetMemberPassword();
+  renderMemberDetail();
+}
+
+// Credential edits made in the shared member-cert modal refresh list + detail.
+window.mcmOnUpdate = function () { renderMembers(); };
 
 function _setupMemberScrollObserver(card) {
   if (_memberObserver) _memberObserver.disconnect();
