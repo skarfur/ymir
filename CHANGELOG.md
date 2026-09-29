@@ -3,6 +3,16 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — remove captain data from public dashboard
+
+- `public/public.js`, `public/public.css`: the "Captain Data" section
+  (profiles, trip tables, per-captain heatmaps and GPS tracks) is gone.
+- `supabase/functions/public-dashboard`: no longer reads or returns
+  `captains`, and `staffStatus` is trimmed to `onDuty`/`supportBoat` (no
+  staff name). Only this year's trips are read now.
+- Removed the now-unused `pub.dash.captainData`, `pub.dash.captainSoon` and
+  `pub.dash.trips` strings (EN + IS).
+
 ## Unreleased (Supabase branch) — public dashboard reads from Supabase
 
 - New Edge Function `supabase/functions/public-dashboard` ports

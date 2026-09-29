@@ -3,14 +3,15 @@ import { createClient, SupabaseClient } from "jsr:@supabase/supabase-js@2";
 
 // Ports public.gs's publicDashboard_ — the data behind /public/, the
 // club's anonymous dashboard (on the water now, YTD trip stats + location
-// heatmap, active member count, captain profiles, staff duty status, flag
-// config). Same response shape as the Apps Script version so
-// public/public.js renders it unchanged.
+// heatmap, active member count, staff duty status, flag config). Same
+// response shape as the Apps Script version, minus `captains`: the public
+// page no longer shows per-captain profiles, trips or GPS tracks, so none of
+// that is read or returned here.
 //
 // Public: no session, deployed with verify_jwt disabled like login. That
 // matches the Apps Script endpoint, which was in PUBLIC_ACTIONS_. It only
-// returns the aggregate / captain-profile fields the old endpoint already
-// exposed — no kennitala, phone or email leaves this function.
+// returns aggregate counts plus boat/location names — no member names,
+// kennitala, phone or email leaves this function.
 //
 // The old version cached for 15s (CacheService) because it aggregates every
 // trip on each hit; this keeps the same TTL in-isolate, and concurrent
@@ -63,52 +64,26 @@ function parseCoords(coords: unknown): { lat: number; lng: number } | null {
   return { lat, lng };
 }
 
-function certLabel(c: any, certDefs: any[]) {
-  const def = c.certId ? certDefs.find((d) => d.id === c.certId) : null;
-  const subcats = def && Array.isArray(def.subcats) ? def.subcats : [];
-  const subcat = subcats.find((s: any) => s.key === c.sub) || null;
-  const defEN = def ? (def.name_en || "") : "";
-  const defIS = def ? (def.name_is || "") : "";
-  const scEN = subcat ? (subcat.labelEN || subcat.label || "") : "";
-  const scIS = subcat ? (subcat.labelIS || "") : "";
-  let labelEN: string, labelIS: string;
-  if (c.title) {
-    labelEN = c.title; labelIS = c.title;
-  } else if (subcat) {
-    labelEN = (defEN || c.certId || "Unknown") + " — " + scEN;
-    labelIS = (defIS || defEN || c.certId || "Unknown") + " — " + (scIS || scEN);
-  } else if (def) {
-    labelEN = defEN || c.certId || "Unknown";
-    labelIS = defIS || defEN || c.certId || "Unknown";
-  } else {
-    labelEN = c.certId || "Unknown";
-    labelIS = labelEN;
-  }
-  return { certId: c.certId, sub: c.sub || "", label: labelEN, labelEN, labelIS };
-}
-
 async function buildDashboard(admin: SupabaseClient): Promise<any> {
-  const [configRes, boatsRes, locationsRes, certDefsRes, checkouts, members, trips] = await Promise.all([
+  const [configRes, boatsRes, locationsRes, checkouts, members, trips] = await Promise.all([
     admin.from("app_config").select("key, value").in("key", ["boatCategories", "staffStatus", "flagConfig"]),
-    admin.from("boats").select("id, category, type_model"),
+    admin.from("boats").select("id, category"),
     admin.from("locations").select("id, name, coordinates"),
-    admin.from("cert_defs").select("id, name_en, name_is, subcats"),
     selectAll(admin, "checkouts",
       "id, boat_name, boat_names, boat_category, location_name, crew_count, is_group, participants_count, staff_names",
       (q) => q.eq("status", "out")),
-    selectAll(admin, "members", "id, name, role, certifications, bio, headshot_url", (q) => q.eq("active", true)),
+    selectAll(admin, "members", "id, role", (q) => q.eq("active", true)),
     selectAll(admin, "trips",
-      "id, member_id, date, role, hours_decimal, distance_nm, boat_id, boat_name, boat_category, location_id, location_name, departure_port, crew_count, track_simplified"),
+      "id, date, hours_decimal, boat_id, boat_category, location_id",
+      (q) => q.gte("date", new Date().getFullYear() + "-01-01")),
   ]);
   if (configRes.error) throw new Error("Config lookup failed");
   if (boatsRes.error) throw new Error("Boats lookup failed");
   if (locationsRes.error) throw new Error("Locations lookup failed");
-  if (certDefsRes.error) throw new Error("Cert defs lookup failed");
 
   const cfg: Record<string, any> = {};
   (configRes.data || []).forEach((r) => { cfg[r.key] = r.value; });
   const boatCategories: any[] = Array.isArray(cfg.boatCategories) ? cfg.boatCategories : [];
-  const certDefs = certDefsRes.data || [];
 
   const catMap: Record<string, any> = {};
   boatCategories.forEach((c) => { catMap[c.key] = c; });
@@ -178,75 +153,8 @@ async function buildDashboard(admin: SupabaseClient): Promise<any> {
   });
   onWaterBoats.forEach((b) => { b.emoji = catMap[b.boatCategory]?.emoji || ""; });
 
-  // ── Captains ──
+  // ── Members ──
   const activeMembers = members.filter((m) => m.role !== "guest").length;
-  const tripsByMember: Record<string, any[]> = {};
-  trips.forEach((t) => {
-    if (t.member_id && (t.role === "skipper" || t.role === "captain")) (tripsByMember[t.member_id] ||= []).push(t);
-  });
-
-  const captains: any[] = [];
-  members.forEach((m) => {
-    const certs = Array.isArray(m.certifications) ? m.certifications : [];
-    if (!certs.some((c: any) => c && c.sub === "captain")) return;
-
-    const captTrips = (tripsByMember[m.id] || [])
-      .slice()
-      .sort((a, b) => (String(b.date || "") > String(a.date || "") ? 1 : -1));
-    let captHours = 0, captDist = 0;
-    captTrips.forEach((t) => { captHours += Number(t.hours_decimal) || 0; captDist += Number(t.distance_nm) || 0; });
-
-    const tripRows = captTrips.map((t) => ({
-      date: t.date || "",
-      boatName: t.boat_name || "",
-      makeModel: boatMap[t.boat_id]?.type_model || "",
-      location: t.location_name || t.departure_port || "",
-      crew: Number(t.crew_count) || 1,
-      duration: t.hours_decimal ? Number(t.hours_decimal).toFixed(1) : "",
-      distance: t.distance_nm ? Number(t.distance_nm).toFixed(1) : "",
-    }));
-
-    const captLocStats: Record<string, { count: number; hours: number }> = {};
-    captTrips.forEach((t) => {
-      const lid = t.location_id || "";
-      if (!lid) return;
-      (captLocStats[lid] ||= { count: 0, hours: 0 });
-      captLocStats[lid].count++; captLocStats[lid].hours += Number(t.hours_decimal) || 0;
-    });
-    const captLocData: any[] = [];
-    Object.keys(captLocStats).forEach((lid) => {
-      const loc = locMap[lid];
-      const ll = loc && parseCoords(loc.coordinates);
-      if (!ll) return;
-      captLocData.push({ name: loc.name || lid, lat: ll.lat, lng: ll.lng, count: captLocStats[lid].count, hours: round1(captLocStats[lid].hours) });
-    });
-
-    const trackLines: any[] = [];
-    captTrips.forEach((t) => {
-      let pts = t.track_simplified;
-      if (typeof pts === "string") { try { pts = JSON.parse(pts); } catch { pts = null; } }
-      if (Array.isArray(pts) && pts.length >= 2) {
-        trackLines.push(pts.filter((p: any) => p && typeof p.lat === "number" && typeof p.lng === "number"));
-      }
-    });
-
-    captains.push({
-      id: m.id,
-      name: m.name || "",
-      bio: m.bio || "",
-      headshotUrl: m.headshot_url || "",
-      certs: certs.map((c: any) => certLabel(c || {}, certDefs)),
-      tripCount: captTrips.length,
-      totalHours: round1(captHours),
-      totalDist: round1(captDist),
-      // The Apps Script ?action=captain record page has no Supabase
-      // equivalent yet; public.js doesn't render this link.
-      captainRecordUrl: "",
-      trips: tripRows,
-      locations: captLocData,
-      trackLines,
-    });
-  });
 
   return {
     success: true,
@@ -254,9 +162,11 @@ async function buildDashboard(admin: SupabaseClient): Promise<any> {
     locations,
     onWater: { boatCount, peopleCount, boats: onWaterBoats },
     activeMembers,
-    captains,
     boatCategories: boatCategories.map((c) => ({ key: c.key, labelEN: c.labelEN || c.key, labelIS: c.labelIS || "", emoji: c.emoji || "" })),
-    staffStatus: cfg.staffStatus ?? null,
+    // Only the two flags public.js shows — not updatedByName.
+    staffStatus: cfg.staffStatus
+      ? { onDuty: !!cfg.staffStatus.onDuty, supportBoat: !!cfg.staffStatus.supportBoat }
+      : null,
     flagConfig: cfg.flagConfig ?? null,
   };
 }

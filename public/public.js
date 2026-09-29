@@ -1,16 +1,5 @@
 // ── Event wiring (replaces inline onclicks; CSP blocks those) ──────────
 document.getElementById('lang-toggle').addEventListener('click', function() { toggleLang(); });
-document.addEventListener('click', function(e) {
-  var hmBtn = e.target.closest('.cap-hm-btn');
-  if (hmBtn && hmBtn.dataset.capCi != null) {
-    setCapHM(parseInt(hmBtn.dataset.capCi, 10), hmBtn.dataset.mode);
-    return;
-  }
-  var moreBtn = e.target.closest('.cap-show-more');
-  if (moreBtn && moreBtn.dataset.capCi != null) {
-    showCapTrips(parseInt(moreBtn.dataset.capCi, 10), parseInt(moreBtn.dataset.capTotal, 10));
-  }
-});
 
 // ── Minimal esc() since we don't load ui.js ──
 function esc(s) {
@@ -150,102 +139,6 @@ function renderDashboard(data) {
   html += '<div class="future-text"><p>' + esc(s('pub.dash.comingSoon')) + '</p></div>';
   html += '</div>';
 
-  html += '</section>';
-
-  // ═══════════════════════════════════════════════════════════════════
-  // 4) CAPTAINS — profile, trips, heatmap per captain
-  // ═══════════════════════════════════════════════════════════════════
-  html += '<section>';
-  html += '<h2>' + esc(s('pub.dash.captainData')) + '</h2>';
-  if (data.captains && data.captains.length) {
-    html += '<div class="captain-list">';
-    data.captains.forEach(function(cap, ci) {
-      html += '<div class="captain-card">';
-
-      // ── Header: headshot + name/stats ──
-      html += '<div class="captain-header">';
-      if (cap.headshotUrl) {
-        var hsUrl = cap.headshotUrl;
-        var dm = hsUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
-        if (dm) hsUrl = 'https://drive.google.com/thumbnail?id=' + dm[1] + '&sz=w200';
-        html += '<img class="captain-headshot" src="' + esc(hsUrl) + '" alt="' + esc(cap.name) + '">';
-      } else {
-        html += '<div class="captain-headshot-ph">&#9875;</div>';
-      }
-      html += '<div>';
-      html += '<div class="captain-name">' + esc(cap.name) + '</div>';
-      html += '<div class="captain-stats">'
-        + '<span>' + esc(cap.tripCount) + ' ' + esc(s('pub.dash.trips')) + '</span>'
-        + '<span>' + esc(cap.totalHours) + 'h</span>'
-        + '<span>' + esc(cap.totalDist || 0) + ' nm</span>'
-        + '</div>';
-      html += '</div></div>';
-
-      // ── Bio ──
-      if (cap.bio) {
-        html += '<div class="captain-bio">' + esc(cap.bio) + '</div>';
-      }
-
-      // ── Certs ──
-      if (cap.certs && cap.certs.length) {
-        var capIS = lang() === 'IS';
-        html += '<div class="captain-certs">';
-        cap.certs.forEach(function(c) {
-          var lbl = capIS ? (c.labelIS || c.labelEN || c.label || '') : (c.labelEN || c.label || '');
-          html += '<span class="cert-badge">' + esc(lbl) + '</span>';
-        });
-        html += '</div>';
-      }
-
-      // ── Heatmap ──
-      if ((cap.locations && cap.locations.length) || (cap.trackLines && cap.trackLines.length)) {
-        html += '<div style="display:flex;align-items:center;justify-content:space-between">'
-          + '<span style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Heatmap</span>'
-          + '<div class="cap-hm-toggle" data-ci="' + ci + '">'
-          + '<button class="cap-hm-btn active" data-mode="trips"  data-cap-ci="' + ci + '">Trips</button>'
-          + '<button class="cap-hm-btn"        data-mode="time"   data-cap-ci="' + ci + '">Time</button>'
-          + '<button class="cap-hm-btn"        data-mode="tracks" data-cap-ci="' + ci + '">Tracks</button>'
-          + '</div></div>';
-        html += '<div class="cap-heatmap" id="capmap-' + ci + '"></div>';
-      }
-
-      // ── Keelboat trips table ──
-      if (cap.trips && cap.trips.length) {
-        var initShow = 10;
-        html += '<div style="overflow-x:auto;margin-top:8px;border:1px solid var(--border);border-radius:8px">'
-          + '<table class="cap-trip-table"><tr>'
-          + '<th>' + esc(IS ? 'Dags.' : 'Date') + '</th>'
-          + '<th>' + esc(IS ? 'Bátur' : 'Boat') + '</th>'
-          + '<th>' + esc(IS ? 'Gerð' : 'Make/Model') + '</th>'
-          + '<th>' + esc(IS ? 'Staðsetning' : 'Location') + '</th>'
-          + '<th>' + esc(IS ? 'Áhöfn' : 'Crew') + '</th>'
-          + '<th>' + esc(IS ? 'Tími' : 'Time') + '</th>'
-          + '<th>' + esc(IS ? 'Vegalengd' : 'Distance') + '</th>'
-          + '</tr>';
-        cap.trips.forEach(function(t, ti) {
-          html += '<tr' + (ti >= initShow ? ' class="cap-extra-row-' + ci + '" style="display:none"' : '') + '>'
-            + '<td>' + esc(t.date) + '</td>'
-            + '<td>' + esc(t.boatName) + '</td>'
-            + '<td>' + esc(t.makeModel) + '</td>'
-            + '<td class="loc-col">' + esc(t.location) + '</td>'
-            + '<td style="text-align:center">' + esc(t.crew) + '</td>'
-            + '<td>' + (t.duration ? esc(t.duration) + 'h' : '') + '</td>'
-            + '<td>' + (t.distance ? esc(t.distance) + ' nm' : '') + '</td>'
-            + '</tr>';
-        });
-        html += '</table></div>';
-        if (cap.trips.length > initShow) {
-          html += '<button class="cap-show-more" id="cap-more-' + ci + '" data-cap-ci="' + ci + '" data-cap-total="' + cap.trips.length + '">'
-            + esc(IS ? 'Sýna fleiri' : 'Show all') + ' (' + (cap.trips.length - initShow) + ' ' + esc(IS ? 'í viðbót' : 'more') + ')</button>';
-        }
-      }
-
-      html += '</div>';
-    });
-    html += '</div>';
-  } else {
-    html += '<div class="captain-placeholder"><p>' + esc(s('pub.dash.captainSoon')) + '</p></div>';
-  }
   html += '</section>';
 
   main.innerHTML = html;
@@ -400,98 +293,6 @@ function initMap(locations) {
   });
 }
 
-// ── Captain heatmaps ──
-var _capData = [];         // captains array from API
-var _capMaps = {};         // ci → Leaflet map
-var _capHeatLayers = {};   // ci → heat layer
-var _capMarkers = {};      // ci → [markers]
-var _capTrkLines = {};     // ci → [polylines]
-var _capModes = {};        // ci → 'trips'|'time'|'tracks'
-
-function initCapMaps() {
-  if (!_capData.length) return;
-  _capData.forEach(function(cap, ci) {
-    var el = document.getElementById('capmap-' + ci);
-    if (!el) return;
-    if (_capMaps[ci]) { _capMaps[ci].remove(); _capMaps[ci] = null; }
-    _capModes[ci] = 'trips';
-    _capMarkers[ci] = [];
-    _capTrkLines[ci] = [];
-    var map = L.map(el, { zoomControl: true, attributionControl: true, scrollWheelZoom: false, zoomSnap: 0.25, zoomDelta: 0.25 });
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 16, maxZoom: 19, attribution: 'Tiles &copy; Esri' }).addTo(map);
-    L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { maxNativeZoom: 17, maxZoom: 19, opacity: 0.9 }).addTo(map);
-    _capMaps[ci] = map;
-    renderCapHM(ci);
-  });
-}
-
-function clearCapHM(ci) {
-  var map = _capMaps[ci]; if (!map) return;
-  if (_capHeatLayers[ci]) { map.removeLayer(_capHeatLayers[ci]); _capHeatLayers[ci] = null; }
-  (_capMarkers[ci] || []).forEach(function(m) { map.removeLayer(m); }); _capMarkers[ci] = [];
-  (_capTrkLines[ci] || []).forEach(function(l) { map.removeLayer(l); }); _capTrkLines[ci] = [];
-}
-
-function renderCapHM(ci) {
-  var map = _capMaps[ci]; if (!map) return;
-  var cap = _capData[ci]; if (!cap) return;
-  clearCapHM(ci);
-  var mode = _capModes[ci] || 'trips';
-
-  if (mode === 'tracks') {
-    var lines = cap.trackLines || [];
-    if (!lines.length) { map.setView([64.148, -21.965], 11.25); return; }
-    var all = [];
-    lines.forEach(function(pts) {
-      var ll = pts.map(function(p) { return [p.lat, p.lng]; });
-      all = all.concat(ll);
-      var ln = L.polyline(ll, { color: '#d4af37', weight: 2, opacity: 0.6 }).addTo(map);
-      _capTrkLines[ci].push(ln);
-    });
-    if (all.length) {
-      _capHeatLayers[ci] = L.heatLayer(all.map(function(p) { return [p[0], p[1], 0.5]; }), {
-        radius: 20, blur: 15, maxZoom: 14, max: 1.0,
-        gradient: { 0.2: '#1e3f6e', 0.4: '#2e86c1', 0.6: '#f1c40f', 0.8: '#e67e22', 1.0: '#e74c3c' }
-      }).addTo(map);
-      map.fitBounds(L.latLngBounds(all).pad(0.1), { maxZoom: 11 });
-    }
-  } else {
-    var locs = cap.locations || [];
-    if (!locs.length) { map.setView([64.148, -21.965], 11.25); return; }
-    var isTime = mode === 'time';
-    var maxV = locs.reduce(function(m, l) { return Math.max(m, isTime ? l.hours : l.count); }, 1);
-    var hd = locs.map(function(l) { return [l.lat, l.lng, (isTime ? l.hours : l.count) / maxV]; });
-    _capHeatLayers[ci] = L.heatLayer(hd, {
-      radius: 30, blur: 20, maxZoom: 14, max: 1.0,
-      gradient: { 0.2: '#1e3f6e', 0.4: '#2e86c1', 0.6: '#f1c40f', 0.8: '#e67e22', 1.0: '#e74c3c' }
-    }).addTo(map);
-    locs.forEach(function(l) {
-      var int = (isTime ? l.hours : l.count) / maxV;
-      var r = Math.max(6, Math.min(20, 6 + int * 14));
-      var vl = isTime ? l.hours + 'h' : l.count + (l.count === 1 ? ' trip' : ' trips');
-      var mk = L.circleMarker([l.lat, l.lng], { radius: r, color: '#d4af37', fillColor: '#d4af37', fillOpacity: 0.3, weight: 1 })
-        .bindTooltip('<strong>' + esc(l.name) + '</strong><br>' + vl + ' &middot; ' + l.hours + 'h').addTo(map);
-      _capMarkers[ci].push(mk);
-    });
-    map.fitBounds(L.latLngBounds(locs.map(function(l) { return [l.lat, l.lng]; })).pad(0.15), { maxZoom: 11 });
-  }
-}
-
-function setCapHM(ci, mode) {
-  _capModes[ci] = mode;
-  var toggle = document.querySelector('.cap-hm-toggle[data-ci="' + ci + '"]');
-  if (toggle) {
-    toggle.querySelectorAll('.cap-hm-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.mode === mode); });
-  }
-  renderCapHM(ci);
-}
-
-function showCapTrips(ci, total) {
-  document.querySelectorAll('.cap-extra-row-' + ci).forEach(function(r) { r.style.display = ''; });
-  var btn = document.getElementById('cap-more-' + ci);
-  if (btn) btn.style.display = 'none';
-}
-
 function fmtTimeNow() {
   var n = new Date();
   return n.getHours() + ':' + String(n.getMinutes()).padStart(2, '0');
@@ -501,9 +302,7 @@ async function load() {
   applyStaticText();
   try {
     var data = await fetchDashboard();
-    _capData = data.captains || [];
     renderDashboard(data);
-    setTimeout(function() { initCapMaps(); }, 100);
   } catch (e) {
     console.error('Dashboard load error:', e);
     document.getElementById('main-content').innerHTML = '<div class="error-msg">' + esc(s('pub.dash.error')) + '</div>';
