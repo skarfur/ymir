@@ -45,6 +45,8 @@ const _boatCatRegistry = [];
 function registerBoatCats(cats) {
   _boatCatRegistry.length = 0;
   if (cats && cats.length) cats.forEach(c => _boatCatRegistry.push(c));
+  // Flag-guidance profile labels (shared/weather.js) reuse the category labels.
+  if (typeof wxRegisterBoatCats === 'function') wxRegisterBoatCats(cats);
 }
 
 function _boatCatLabel(key) {

@@ -66,6 +66,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       registerCertDefsForBoats(cfgRes.certDefs);
     }
     if (cfgRes.flagConfig && typeof wxLoadFlagConfig === 'function') { wxLoadFlagConfig(cfgRes.flagConfig); }
+    // Staff override decides the flag server-side too; load it so the launch
+    // guidance shown here matches what save_checkout will enforce.
+    if (typeof wxLoadFlagOverride === 'function') wxLoadFlagOverride(cfgRes.flagOverride || null);
     checkouts = coRes.checkouts || [];
     boats     = (cfgRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
     locations = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
@@ -227,10 +230,12 @@ function toggleFleetCat(toggle) {
 function renderActiveCheckouts() {
   const el   = document.getElementById('activeList');
   const active = checkouts.filter(c => c.status==='out');
-  if (!active.length) { el.innerHTML = `<div class="empty-note">${s('member.noCheckouts')}</div>`; return; }
+  const requests = _myFlagRequestsHtml();
+  _syncApprovalPoll();
+  if (!active.length) { el.innerHTML = requests + (requests ? '' : `<div class="empty-note">${s('member.noCheckouts')}</div>`); return; }
   active.sort((a, b) => (a.memberKennitala === user.kennitala ? 0 : 1) - (b.memberKennitala === user.kennitala ? 0 : 1));
   boatRegistry.setCos(active);
-  el.innerHTML = active.map(c => {
+  el.innerHTML = requests + active.map(c => {
     const isMe = c.memberKennitala === user.kennitala;
     return renderCheckoutCard(c, {
       isMe,
@@ -238,6 +243,100 @@ function renderActiveCheckouts() {
       onReturn: isMe ? 'openReturnModal' : undefined
     });
   }).join('');
+}
+
+// ── Flag-gated checkout requests ─────────────────────────────────────────────
+// Under a flag where a boat's guidance is "approval", save_checkout stores the
+// checkout as status 'pending' until staff or a captain decide it
+// (decide_checkout). The member sees their own pending / denied requests at
+// the top of the active list, and the page polls while one is pending.
+var _dismissedDenied = {};
+function _myFlagRequestsHtml() {
+  const mine = checkouts.filter(c => c.memberKennitala === user.kennitala &&
+    (c.status === 'pending' || (c.status === 'denied' && !_dismissedDenied[c.id])));
+  return mine.map(c => {
+    const pending = c.status === 'pending';
+    const flag = (typeof SCORE_CONFIG !== 'undefined' && SCORE_CONFIG.flags[c.flagKey]) || null;
+    const who  = c.approvedByName ? ' · ' + esc(c.approvedByName) : '';
+    return '<div class="flag-request-card ' + (pending ? 'is-pending' : 'is-denied') + '">'
+      + '<div class="flex-1">'
+      +   '<div class="fw-500">' + (flag ? flag.icon + ' ' : '') + esc(c.boatName || '') + '</div>'
+      +   '<div class="text-sm mt-2">' + wxGuidanceChip(pending ? 'approval' : 'no') + ' '
+      +     (pending ? s('member.awaitingApproval') : s('member.requestDenied') + who) + '</div>'
+      +   (!pending && c.approvalNote ? '<div class="text-sm text-muted mt-4">' + esc(c.approvalNote) + '</div>' : '')
+      + '</div>'
+      + (pending
+          ? '<button class="btn btn-secondary btn-sm" data-member-click="cancelCheckoutRequest" data-member-arg="' + esc(c.id) + '">' + s('member.withdrawRequest') + '</button>'
+          : '<button class="btn btn-secondary btn-sm" data-member-click="dismissDeniedRequest" data-member-arg="' + esc(c.id) + '">' + s('btn.close') + '</button>')
+      + '</div>';
+  }).join('');
+}
+async function cancelCheckoutRequest(id) {
+  try {
+    await callSupabaseRpc('cancel_checkout_request', { p_id: id });
+    _invalidateApiCache('getActiveCheckouts');
+    checkouts = checkouts.filter(c => c.id !== id);
+    renderActiveCheckouts(); renderFleetByCat();
+  } catch (e) { showToast(s('toast.error') + ': ' + e.message, 'err'); }
+}
+function dismissDeniedRequest(id) { _dismissedDenied[id] = true; renderActiveCheckouts(); }
+
+let _approvalPollTimer = null;
+function _syncApprovalPoll() {
+  const waiting = checkouts.some(c => c.status === 'pending' && c.memberKennitala === user.kennitala);
+  if (waiting && !_approvalPollTimer) _approvalPollTimer = setInterval(_pollApproval, 20000);
+  if (!waiting && _approvalPollTimer) { clearInterval(_approvalPollTimer); _approvalPollTimer = null; }
+}
+async function _pollApproval() {
+  const before = {};
+  checkouts.forEach(c => { before[c.id] = c.status; });
+  try {
+    _invalidateApiCache('getActiveCheckouts');
+    const res = await apiGet('getActiveCheckouts');
+    checkouts = res.checkouts || [];
+  } catch (e) { return; }
+  checkouts.forEach(c => {
+    if (before[c.id] !== 'pending' || c.memberKennitala !== user.kennitala) return;
+    if (c.status === 'out')    showToast(s('member.requestApproved', { boat: c.boatName || '' }));
+    if (c.status === 'denied') showToast(s('member.requestDeniedToast', { boat: c.boatName || '' }), 'warn');
+  });
+  renderActiveCheckouts(); renderFleetByCat();
+}
+
+// Flag the member is launching under: the current (hysteresis + override)
+// flag from the weather widget, or the staff override if weather hasn't
+// loaded. '' when neither is known — the server then asks for approval.
+function _currentFlagKey() {
+  if (currentWx && currentWx.flagKey) return currentWx.flagKey;
+  const ov = (typeof wxGetFlagOverride === 'function') ? wxGetFlagOverride() : null;
+  return ov ? ov.flagKey : '';
+}
+function _launchGuidance(boat) {
+  const flagKey = _currentFlagKey();
+  const g = wxBoatGuidance(boat, flagKey);
+  if (!flagKey && g.configured) g.status = 'approval';
+  g.flagKey = flagKey;
+  return g;
+}
+// Banner at the top of each launch step. Returns '' for plain 'ok'.
+function _launchGuidanceHtml(boat) {
+  const g = _launchGuidance(boat);
+  if (g.status === 'ok' && !g.note) return '';
+  const flag = SCORE_CONFIG.flags[g.flagKey];
+  const extra = g.status === 'approval' ? s('member.approvalNeededHint')
+              : g.status === 'no'       ? s('member.notAllowedHint') : '';
+  return '<div class="launch-guidance" style="border-color:color-mix(in srgb, ' + wxGuidanceColor(g.status) + ' 40%, transparent)">'
+    + '<div class="d-flex items-center gap-6 flex-wrap">' + (flag ? '<span>' + flag.icon + '</span>' : '')
+    + '<span class="fw-500">' + esc(wxProfileLabel(g.profileKey)) + '</span>' + wxGuidanceChip(g.status) + '</div>'
+    + (g.note ? '<div class="text-sm mt-4">' + esc(g.note) + '</div>' : '')
+    + (extra ? '<div class="text-sm text-muted mt-4">' + extra + '</div>' : '')
+    + (!g.flagKey ? '<div class="text-sm text-muted mt-4">' + s('member.flagUnknownHint') + '</div>' : '')
+    + '</div>';
+}
+function _refreshNcGuidance() {
+  const el = document.getElementById('launchGuidance');
+  const cat = document.getElementById('launchBoatCat');
+  if (el && cat) el.innerHTML = _launchGuidanceHtml({ id: '', category: cat.value });
 }
 
 // ══ LAUNCH FLOW ══════════════════════════════════════════════════════════════
@@ -262,7 +361,7 @@ function openReturnModal(coId) {
 
 // Step 1 — boat picker
 function renderLaunchPicker(preselectedBoatId) {
-  const active=checkouts.filter(c=>c.status==='out');
+  const active=checkouts.filter(c=>c.status==='out'||c.status==='pending');
   const avail=boats.filter(b=>
     !active.find(c=>c.boatId===b.id) &&
     !boolVal(b.oos) &&
@@ -348,7 +447,7 @@ function renderNonClubLaunchForm() {
     '<div class="field"><label>'+s('logbook.boatNameLabel')+'</label>'+
     '<input type="text" id="launchBoatName" placeholder="'+s('logbook.boatNamePh')+'" autocomplete="off"></div>'+
     '<div class="field"><label>'+s('logbook.boatCategory')+'</label>'+
-    '<select id="launchBoatCat">'+catOpts+'</select></div>'+
+    '<select id="launchBoatCat" data-member-change="_refreshNcGuidance">'+catOpts+'</select></div>'+
     '<div class="field"><label>'+s('lbl.sailingLocation')+'</label>'+
     '<div style="display:flex;gap:6px;align-items:center">'+
       '<input type="text" id="launchLocFree" placeholder="'+s('logbook.locationNamePh')+'" autocomplete="off" style="flex:1">'+
@@ -382,6 +481,8 @@ function renderNonClubLaunchForm() {
       '<button class="btn btn-secondary" data-member-click="renderLaunchPicker">← '+s('member.back')+'</button>'+
       '<button class="btn btn-primary" data-member-click="advanceToLaunchChecklist">'+s('member.continue')+'</button>'+
     '</div>';
+  document.getElementById('launchModalBody').insertAdjacentHTML('afterbegin','<div id="launchGuidance"></div>');
+  _refreshNcGuidance();
   window._launchCrewCount=1;
   renderCrewInputs();
   _ensureLaunchMembers();
@@ -397,7 +498,13 @@ function renderLaunchForm(boat) {
   var portOpts=isKeel?locations.filter(function(l){return l.type==='port';}).map(function(p){return'<option value="'+esc(p.name)+'">';}).join(''):'';
   var defaultPort='';
   if(isKeel&&boat.defaultPortId){var _hp=locations.find(function(l){return l.id===boat.defaultPortId;});if(_hp)defaultPort=_hp.name;}
-  document.getElementById('launchModalBody').innerHTML=
+  var _g=_launchGuidance(boat);
+  if(_g.status==='no'){
+    document.getElementById('launchModalBody').innerHTML=_launchGuidanceHtml(boat)+
+      '<div class="btn-row"><button class="btn btn-secondary" data-member-click="renderLaunchPicker">← '+s('member.back')+'</button></div>';
+    return;
+  }
+  document.getElementById('launchModalBody').innerHTML=_launchGuidanceHtml(boat)+
     '<div class="field"><label>'+s('lbl.sailingLocation')+'</label>'+
     '<select id="launchLocation"><option value="">'+s('lbl.selectDots')+'</option>'+locOpts+'</select></div>'+
     (isKeel?'<div class="field"><label style="color:var(--accent-fg)">⚓️ '+s('member.departurePort')+'</label>'+
@@ -445,6 +552,7 @@ function advanceToLaunchChecklist() {
     var lname=(document.getElementById('launchLocFree')?.value||'').trim();
     if(!bname){err.textContent=s('logbook.enterBoatName');err.style.display='block';return;}
     if(!lname){err.textContent=s('logbook.enterLocation');err.style.display='block';return;}
+    if(_launchGuidance({id:'',category:document.getElementById('launchBoatCat')?.value||'other'}).status==='no'){err.textContent=s('member.notAllowedHint');err.style.display='block';return;}
     err.style.display='none';
     window._launchFormValues={
       nonClub:true,
@@ -491,7 +599,9 @@ function renderLaunchChecklist(boat) {
   // cl.launch is an array of {id,text,textIS,sort} objects (config) or plain strings (defaults).
   var items=Array.isArray(cl.launch)?cl.launch.slice().sort((a,b)=>(a.sort||0)-(b.sort||0)):[];
 
+  var _needsApproval=_launchGuidance(boat).status==='approval';
   document.getElementById('launchModalBody').innerHTML=
+    _launchGuidanceHtml(boat)+
     '<div class="section-label mb-12">PRE-LAUNCH — '+_fmtCatLabel(cat)+'</div>'+
     (!items.length
       ?'<div style="font-size:12px;color:var(--muted);padding:8px 0;font-style:italic">'+s('member.noChecklist')+'</div>'
@@ -503,7 +613,7 @@ function renderLaunchChecklist(boat) {
     '<div id="launchCheckErr" class="text-sm text-red mt-8" style="display:none">'+(L==='IS'?'Vinsamlegast staðfestu alla liði.':'Please confirm all items before proceeding.')+'</div>'+
     '<div class="btn-row" style="margin-top:14px">'+
       '<button class="btn btn-secondary" data-member-click="'+(boat.nonClub?'renderNonClubLaunchForm':'_renderLaunchFormFromState')+'">← '+s('member.back')+'</button>'+
-      '<button class="btn btn-primary" data-member-click="submitLaunch">⛵ '+s('member.launchBoat').replace('⛵ ','')+'</button>'+
+      '<button class="btn btn-primary" data-member-click="submitLaunch">'+(_needsApproval?s('member.requestApproval'):'⛵ '+s('member.launchBoat').replace('⛵ ',''))+'</button>'+
     '</div>';
 }
 
@@ -641,6 +751,9 @@ async function submitLaunch() {
   if(!isNC&&!lid){showToast(s('staff.coForm.errLocation'),'err');return;}
   if(isNC&&!_boatName){showToast(s('logbook.enterBoatName'),'err');return;}
   if(isNC&&!_locName){showToast(s('logbook.enterLocation'),'err');return;}
+  // The server judges the checkout by the flag in the snapshot; give a
+  // still-loading weather widget a few seconds rather than sending none.
+  for(var _w=0;_w<10&&!currentWx;_w++) await new Promise(function(r){setTimeout(r,500);});
   var snap=(typeof wxSnapshot==='function')?wxSnapshot(currentWx):null;
   try {
     var res=await callSupabaseRpc('save_checkout',{
@@ -659,12 +772,17 @@ async function submitLaunch() {
       memberKennitala:user.kennitala, memberName:user.name, crew:crewCount,
       crewNames:crewNames.length?JSON.stringify(crewNames):'',
       locationId:_locId, locationName:_locName,
-      checkedOutAt:tout, expectedReturn:ret, status:'out',
-      nonClub:isNC,
+      checkedOutAt:tout, expectedReturn:ret, status:res.status||'out',
+      nonClub:isNC, flagKey:res.flagKey||'', guidanceStatus:res.guidanceStatus||'',
     });
     // Update UI immediately — don't block on crew confirmations
     window._launchFormValues=null;
     closeModal('launchModal'); renderActiveCheckouts(); renderFleetByCat();
+    if(res.status==='pending'){
+      // Crew confirmations go out when staff approve (staff/staff.js).
+      showToast(s('member.approvalRequested'));
+      return;
+    }
     showToast(s('staff.coForm.checkedOut'));
     // Fire crew confirmations in the background (non-blocking)
     if(crewNames.length){
@@ -687,7 +805,8 @@ async function submitLaunch() {
     }
   } catch(e){
     var errEl=document.getElementById('launchCheckErr');
-    if(errEl){errEl.textContent=s('toast.error')+': '+e.message;errEl.style.display='block';}
+    var msg=/FLAG_BLOCKED/.test(e.message||'')?s('member.notAllowedHint'):s('toast.error')+': '+e.message;
+    if(errEl){errEl.textContent=msg;errEl.style.display='block';}
   }
 }
 
@@ -695,7 +814,7 @@ async function submitLaunch() {
 function _wxSnapHtml(snap) {
   if(!snap) return '<div class="text-muted text-sm">No data</div>';
   var dir=snap.dir||snap.wDir||"", wv=snap.wv!=null?snap.wv:snap.waveH, tc=snap.tc!=null?snap.tc:snap.airT, feels=snap.feels!=null?snap.feels:snap.apparentT;
-  var fi={green:"🟢",yellow:"🟡",orange:"🟠",red:"🔴"}, rows=[];
+  var fi={green:"🟢",yellow:"🟡",orange:"🟠",red:"🔴",black:"⚫"}, rows=[];
   if(snap.flag)           rows.push([fi[snap.flag]||"",snap.flag.toUpperCase()]);
   if(snap.bft!=null){var wsStr=snap.ws!=null?(typeof snap.ws==='string'&&snap.ws.indexOf('-')!==-1?snap.ws.split('-').map(function(v){return Math.round(v);}).join('–')+'m/s ':snap.ws+'m/s '):'';rows.push(["💨",dir+" "+wsStr+"Force "+snap.bft+(snap.wg!=null?" (gusts "+snap.wg+"m/s)":"")]);}
   if(wv!=null)            rows.push(["🌊",wv+"m"+(snap.waveDir?" "+snap.waveDir:"")]);
