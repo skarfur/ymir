@@ -3,6 +3,16 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — public dashboard no longer bounces to login
+
+- `shared/api.js`: a 401 from a Supabase-routed action only triggers the
+  "session expired → /login/" redirect when a session token was actually
+  sent. Anonymous visitors hitting a session-gated action now just get an
+  error for that call instead of being redirected.
+- `shared/weather.js`: the weather widget skips the session-gated BIRK
+  observations proxy (`getWeather`) when there's no session and uses Open-Meteo's current
+  conditions instead. This was the call sending `/public/` visitors to login.
+
 ## Unreleased (Supabase branch) — weather: half-hourly BIRK observations
 
 - `supabase/functions/weather/index.ts`: the `weather` Edge Function now

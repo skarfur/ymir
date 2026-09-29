@@ -759,7 +759,10 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
   // instead, and the eventual (still in-flight) response just warms the
   // sessionStorage cache for the next refresh tick.
   const BIRK_TIMEOUT_MS = 2000;
-  const birkPromise = useBirk
+  // The proxy is session-gated, so anonymous viewers (the public dashboard)
+  // skip it and go straight to the Open-Meteo fallback.
+  const hasSession = typeof _getSessionToken === 'function' && !!_getSessionToken();
+  const birkPromise = (useBirk && hasSession)
     ? Promise.race([
         apiGet('getWeather', fresh ? { _fresh: true } : {}).catch(() => null),
         new Promise(resolve => setTimeout(() => resolve(null), BIRK_TIMEOUT_MS)),
