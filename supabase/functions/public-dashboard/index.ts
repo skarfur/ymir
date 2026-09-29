@@ -1,6 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { createAdminClient } from "../_shared/session.ts";
+import { createClient, SupabaseClient } from "jsr:@supabase/supabase-js@2";
 
 // Ports public.gs's publicDashboard_ — the data behind /public/, the
 // club's anonymous dashboard (on the water now, YTD trip stats + location
@@ -29,6 +28,12 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
+}
+
+// Inlined rather than imported from _shared/session.ts so this public
+// function doesn't bundle the session/JWT-signing code it never uses.
+function createAdminClient(): SupabaseClient {
+  return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 }
 
 const CACHE_TTL_MS = 15 * 1000;
