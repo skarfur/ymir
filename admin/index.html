@@ -497,10 +497,10 @@
         </div>
         <div class="col-body" id="flagThresholdsCard">
           <div class="gap-10 mb-12" style="display:grid;grid-template-columns:repeat(4,1fr)">
-            <div class="field"><label style="color:var(--yellow)" for="fcThreshY">🟡 <span data-s="admin.yellowGte"></span></label><input type="number" id="fcThreshY" min="1" max="99" value="25" data-admin-input="updateFlagPreview"></div>
-            <div class="field"><label style="color:var(--orange)" for="fcThreshO">🟠 <span data-s="admin.orangeGte"></span></label><input type="number" id="fcThreshO" min="1" max="99" value="45" data-admin-input="updateFlagPreview"></div>
-            <div class="field"><label class="text-red" for="fcThreshR">🔴 <span data-s="admin.redGte"></span></label><input type="number" id="fcThreshR" min="1" max="99" value="65" data-admin-input="updateFlagPreview"></div>
-            <div class="field"><label style="color:#999" for="fcThreshB">⚫️ <span data-s="admin.closedGte"></span></label><input type="number" id="fcThreshB" min="1" max="120" value="80" data-admin-input="updateFlagPreview"></div>
+            <div class="field"><label style="color:var(--yellow)" for="fcThreshY">🟡 <span data-s="admin.yellowGte"></span></label><input type="number" id="fcThreshY" min="1" max="199" value="20" data-admin-input="updateFlagPreview"></div>
+            <div class="field"><label class="text-red" for="fcThreshR">🔴 <span data-s="admin.redGte"></span></label><input type="number" id="fcThreshR" min="1" max="199" value="40" data-admin-input="updateFlagPreview"></div>
+            <div class="field"><label class="text-muted" for="fcThreshB">⚫️ <span data-s="admin.closedGte"></span></label><input type="number" id="fcThreshB" min="1" max="199" value="80" data-admin-input="updateFlagPreview"></div>
+            <div class="field"><label for="fcHysteresis" data-s="admin.hysteresis"></label><input type="number" id="fcHysteresis" min="0" max="30" value="5"><div class="text-10 text-muted mt-3" data-s="admin.hysteresisHint"></div></div>
           </div>
         </div>
       </div>
@@ -516,8 +516,9 @@
         <div class="col-head" data-admin-toggle-section><div class="col-title" data-s="admin.dirGustMods"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagDirCard">
           <div class="gap-12 mb-12" style="display:grid;grid-template-columns:1fr 1fr">
-            <div class="field"><label data-s="admin.windDirMod" for="fcWindDirPts"></label><input type="number" id="fcWindDirPts" min="0" max="20" value="0" data-admin-input="updateFlagPreview"><div class="text-10 text-muted mt-3" data-s="admin.windDirModHint"></div></div>
-            <div class="field"><label data-s="admin.gustMod1" for="fcGust1Pts"></label><input type="number" id="fcGust1Pts" min="0" max="20" value="0" data-admin-input="updateFlagPreview"><div class="text-10 text-muted mt-3" data-s="admin.gustMod1Hint"></div></div><div class="field"><label data-s="admin.gustMod2" for="fcGust2Pts"></label><input type="number" id="fcGust2Pts" min="0" max="20" value="0" data-admin-input="updateFlagPreview"><div class="text-10 text-muted mt-3" data-s="admin.gustMod2Hint"></div></div></div>
+            <div class="field"><label data-s="admin.windDirMod" for="fcWindDirPts"></label><input type="number" id="fcWindDirPts" min="0" max="60" value="0" data-admin-input="updateFlagPreview"><div class="text-10 text-muted mt-3" data-s="admin.windDirModHint"></div></div>
+            <div class="field"><label data-s="admin.windDirMinBft" for="fcWindDirMinBft"></label><input type="number" id="fcWindDirMinBft" min="0" max="12" value="3" data-admin-input="updateFlagPreview"><div class="text-10 text-muted mt-3" data-s="admin.windDirMinBftHint"></div></div>
+            <div class="field"><label data-s="admin.gustMod1" for="fcGust1Pts"></label><input type="number" id="fcGust1Pts" min="0" max="60" value="0" data-admin-input="updateFlagPreview"><div class="text-10 text-muted mt-3" data-s="admin.gustMod1Hint"></div></div><div class="field"><label data-s="admin.gustMod2" for="fcGust2Pts"></label><input type="number" id="fcGust2Pts" min="0" max="60" value="0" data-admin-input="updateFlagPreview"><div class="text-10 text-muted mt-3" data-s="admin.gustMod2Hint"></div></div></div>
           </div>
           <div class="field"><label data-s="admin.windDirDirs" for="fcWindDirDirs"></label><input type="text" id="fcWindDirDirs" value="" placeholder="E,NE,SE" data-admin-input="updateFlagPreview"></div>
         </div>
@@ -547,9 +548,9 @@
         <div class="col-head" data-admin-toggle-section><div class="col-title" data-s="admin.visScoring"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagVisCard">
           <div class="gap-10 mb-12" style="display:grid;grid-template-columns:repeat(3,1fr)">
-            <div class="field"><label data-s="admin.visGood" for="fcVisGood"></label><input type="number" id="fcVisGood" min="0" max="20" value="0" data-admin-input="updateFlagPreview"></div>
-            <div class="field"><label data-s="admin.visReduced" for="fcVisReduced"></label><input type="number" id="fcVisReduced" min="0" max="20" value="0" data-admin-input="updateFlagPreview"></div>
-            <div class="field"><label data-s="admin.visPoor" for="fcVisPoor"></label><input type="number" id="fcVisPoor" min="0" max="20" value="0" data-admin-input="updateFlagPreview"></div>
+            <div class="field"><label data-s="admin.visGood" for="fcVisGood"></label><input type="number" id="fcVisGood" min="0" max="80" value="0" data-admin-input="updateFlagPreview"></div>
+            <div class="field"><label data-s="admin.visReduced" for="fcVisReduced"></label><input type="number" id="fcVisReduced" min="0" max="80" value="0" data-admin-input="updateFlagPreview"></div>
+            <div class="field"><label data-s="admin.visPoor" for="fcVisPoor"></label><input type="number" id="fcVisPoor" min="0" max="80" value="0" data-admin-input="updateFlagPreview"></div>
           </div>
         </div>
       </div>
@@ -557,6 +558,37 @@
         <div class="col-head" data-admin-toggle-section><div class="col-title" data-s="admin.flagLabelsAdvice"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagAdviceCard">
           <div id="fcFlagAdvice" class="d-flex flex-col gap-12 mb-14"></div>
+        </div>
+      </div>
+      <div class="col-section">
+        <div class="col-head" data-admin-toggle-section><div class="col-title" data-s="admin.gdClassTitle"></div><span class="col-toggle">▼</span></div>
+        <div class="col-body hidden" id="flagGuidanceCard">
+          <div class="text-xs text-muted mb-10" data-s="admin.gdClassHint"></div>
+          <div id="fcGuidanceProfiles" class="fc-gd-grid mb-10"></div>
+          <div class="d-flex flex-wrap gap-8 items-center mb-8">
+            <select id="fcGdAddCat" aria-label="Category"></select>
+            <button class="btn btn-secondary text-xs" data-admin-click="fcAddCategoryProfile" data-s="admin.gdAddCategory"></button>
+          </div>
+          <div class="d-flex flex-wrap gap-8 items-center">
+            <input type="text" id="fcGdNewKey" placeholder="key (e.g. optimist)" style="max-width:120px">
+            <input type="text" id="fcGdNewLabel" placeholder="Label (EN)" style="max-width:150px">
+            <input type="text" id="fcGdNewLabelIS" placeholder="Heiti (IS)" style="max-width:150px">
+            <button class="btn btn-secondary text-xs" data-admin-click="fcAddCustomProfile" data-s="admin.gdAddCustom"></button>
+          </div>
+        </div>
+      </div>
+      <div class="col-section">
+        <div class="col-head" data-admin-toggle-section><div class="col-title" data-s="admin.gdBoatTitle"></div><span class="col-toggle">▼</span></div>
+        <div class="col-body hidden" id="flagGuidanceBoatsCard">
+          <div class="text-xs text-muted mb-10" data-s="admin.gdBoatHint"></div>
+          <div id="fcGuidanceBoats" class="fc-gd-boats"></div>
+        </div>
+      </div>
+      <div class="col-section">
+        <div class="col-head" data-admin-toggle-section><div class="col-title" data-s="admin.gdActTitle"></div><span class="col-toggle">▼</span></div>
+        <div class="col-body hidden" id="flagGuidanceActsCard">
+          <div class="text-xs text-muted mb-10" data-s="admin.gdActHint"></div>
+          <div id="fcGuidanceActs" class="fc-gd-grid"></div>
         </div>
       </div>
       <div class="col-section">

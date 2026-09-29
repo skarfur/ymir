@@ -74,6 +74,7 @@ async function fetchAll() {
       apiGet('getConfig').catch(() => null),
     ]);
     if (cfgRes?.flagConfig && typeof wxLoadFlagConfig === 'function') wxLoadFlagConfig(cfgRes.flagConfig);
+    if (cfgRes?.boatCategories && typeof wxRegisterBoatCats === 'function') wxRegisterBoatCats(cfgRes.boatCategories);
     if (typeof wxLoadFlagOverride === 'function') wxLoadFlagOverride(cfgRes?.flagOverride ?? null);
     const staffStatus = cfgRes?.staffStatus ?? null;
     render(wx, marine, staffStatus);
@@ -108,7 +109,7 @@ function render(wx, marine, staffStatus) {
   // wxFlagNow applies a staff override if one is active (expires at midnight);
   // otherwise identical to wxScoreFlag. The hourly strip below stays on raw
   // scoring so the forecast trajectory is still visible.
-  const _flagResult = wxFlagNow(ws, wDir, waveH ?? 0, c.temperature_2m, sst, wg, visKey);
+  const _flagResult = wxFlagNow(ws, wDir, waveH ?? 0, c.apparent_temperature ?? c.temperature_2m, sst, wg, visKey);
   const { flagKey, flag, score, breakdown, reasons, override } = _flagResult;
   const presClass = presTrend === 'rising' ? 'rising' : presTrend === 'falling' ? 'falling' : '';
 
@@ -126,6 +127,8 @@ function render(wx, marine, staffStatus) {
       t: fmtT(hr.time[i]), i,
       ws:   hr.wind_speed_10m[i]   || 0,
       wg:   hr.wind_gusts_10m[i]   || 0,
+      at:   hr.apparent_temperature?.[i] ?? null,
+      sst:  mhr?.sea_surface_temperature?.[i] ?? sst,
       wd:   hr.wind_direction_10m[i],
       pr:   hr.surface_pressure?.[i] ?? null,
       vis:  hr.visibility?.[i] ?? null,
@@ -137,7 +140,7 @@ function render(wx, marine, staffStatus) {
 
   const marineNote = ''
 
-  window._wfFlagResult  = { flagKey, flag, score, breakdown, override };
+  window._wfFlagResult  = { flagKey, flag, score, breakdown, override, held: _flagResult.held, marineFallback: !!marine?._fallback };
   window._wfStaffStatus = staffStatus;
   const IS_LANG = document.documentElement.lang === 'is';
   const overrideNote = override ? ((IS_LANG && override.notesIS) ? override.notesIS : (override.notes || override.notesIS || '')) : '';
@@ -288,9 +291,9 @@ ${staffStatus ? wxStaffStatusHtml(staffStatus) : ''}
 // ─── Hourly strip ─────────────────────────────────────────────────────────────
 const WAVE_ICON_ = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>';
 function renderHourStrip(pts) {
-  const FLAG_COLORS = { green:'var(--green)', yellow:'var(--yellow)', orange:'var(--orange)', red:'var(--red)' };
+  const FLAG_COLORS = { green:'var(--green)', yellow:'var(--yellow)', red:'var(--red)', black:'var(--muted)' };
   document.getElementById('hourStrip').innerHTML = pts.map(p => {
-    const { flagKey } = wxScoreFlag(p.ws, wxDirLabel(p.wd), p.mWH ?? 0, null, null, null, wxVisKey(p.vis));
+    const { flagKey } = wxScoreFlag(p.ws, wxDirLabel(p.wd), p.mWH ?? 0, p.at, p.sst, p.wg, wxVisKey(p.vis));
     return `<div class="h-slot${p.isNow?' now':p.isPast?' past':''}">
       <div class="h-time">${p.isNow ? 'NOW' : p.t}</div>
       <div class="h-main">

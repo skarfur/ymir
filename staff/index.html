@@ -25,6 +25,7 @@
 <script src="../shared/maintenance.js" defer></script>
 <script src="../shared/payroll.js" defer></script>
 <script src="../shared/certs.js" defer></script>
+<script src="../shared/scheduled-event.js" defer></script>
 <link rel="stylesheet" href="staff.css">
 </head>
 <body>
@@ -87,6 +88,18 @@
     </div>
   </div>
 
+  <!-- ══ TODAY'S ACTIVITIES × FLAG ══ -->
+  <div id="todayActsCard" class="mb-12 d-none">
+    <div class="section-label mb-8" data-s="staff.todayActsFlag">TODAY'S ACTIVITIES</div>
+    <div id="todayActsList"></div>
+  </div>
+
+  <!-- ══ FLAG APPROVALS ══ -->
+  <div id="pendingApprovalsCard" class="mb-12 d-none">
+    <div class="section-label mb-8"><span data-s="staff.pendingApprovals">AWAITING APPROVAL</span> <span id="pendingApprovalsCount" class="pending-count"></span></div>
+    <div id="pendingApprovals"></div>
+  </div>
+
   <!-- ══ ACTIVE CHECKOUTS ══ -->
   <div class="section-label mt-16" data-s="staff.activeCheckouts">ACTIVE CHECKOUTS</div>
 
@@ -119,7 +132,8 @@
       </div>
       <div class="inline-fields">
         <div class="field"><label id="boatLabel"></label>
-          <select id="coBoat" data-staff-change="onCoBoatChange"><option value="" id="selectBoatOpt"></option></select></div>
+          <select id="coBoat" data-staff-change="onCoBoatChange"><option value="" id="selectBoatOpt"></option></select>
+          <div id="coGuidance" class="mt-4"></div></div>
         <div class="field"><label id="locationLabel" for="coLocation"></label>
           <select id="coLocation"><option value="" id="selectLocOpt"></option></select></div>
       </div>

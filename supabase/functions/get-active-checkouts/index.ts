@@ -70,8 +70,13 @@ Deno.serve(async (req: Request) => {
   if (date && date !== todayUtc) {
     result = (all || []).filter((c) => String(c.created_at || "").slice(0, 10) === date);
   } else {
+    // Today's pending (awaiting flag approval) and denied requests ride along
+    // with active + checked-in rows so the member sees the decision and staff
+    // see the approval queue. An unanswered request from a previous day is
+    // stale and dropped.
+    const isToday = (c: any) => String(c.created_at || "").slice(0, 10) === todayUtc;
     result = (all || []).filter(
-      (c) => c.status === "out" || (c.status === "in" && String(c.created_at || "").slice(0, 10) === todayUtc),
+      (c) => c.status === "out" || (isToday(c) && (c.status === "in" || c.status === "pending" || c.status === "denied")),
     );
   }
 
@@ -137,6 +142,13 @@ Deno.serve(async (req: Request) => {
       guardianName: c.guardian_name || (g && g.name) || "",
       guardianPhone: c.guardian_phone || (g && g.phone) || "",
       groupLabel: "", // stubbed — see file header
+      // Flag gate (see 20260929100000_flag_guidance.sql).
+      flagKey: c.flag_key || "",
+      guidanceProfile: c.guidance_profile || "",
+      guidanceStatus: c.guidance_status || "",
+      approvedByName: c.approved_by_name || "",
+      approvedAt: c.approved_at || "",
+      approvalNote: c.approval_note || "",
     };
   });
 

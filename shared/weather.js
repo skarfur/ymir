@@ -38,27 +38,51 @@ window.DUTY_ICONS = Object.freeze({
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// FLAG CONFIG  —  single source of truth for all flag logic
-// Admin-editable via admin → Flags tab.  wxLoadFlagConfig() merges saved values.
-// ═══════════════════════════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════════════════════
 // SCORE_CONFIG  —  single source of truth for all flag/scoring logic.
-// Admin-editable via admin → Flags tab. wxLoadFlagConfig() merges saved values.
+// Admin-editable via admin → Flags tab. wxLoadFlagConfig() merges saved values
+// over these defaults; "Reset to defaults" in the admin tab reloads them.
 // wxScoreFlag()  computes total score → flag + full breakdown.
+//
+// Four flags: green / yellow / red / black. Calibrated so 20 points ≈ one flag
+// step and sustained wind alone decides the flag at each force (F5 yellow,
+// F6–F7 red, F8+ black); other factors push a borderline case up a step.
+// `orange` is no longer scored — it stays in `flags` only so trips and
+// snapshots recorded before the switch still render an icon.
 // ═══════════════════════════════════════════════════════════════════════════════
+const FLAG_KEYS = ['green', 'yellow', 'red', 'black'];
+// Legacy orange sorts with red: it was a "restricted, staff decide" level.
+const _FLAG_RANK = { green: 0, yellow: 1, orange: 2, red: 2, black: 3 };
+function wxFlagRank(key) { return _FLAG_RANK[key] != null ? _FLAG_RANK[key] : 0; }
+// Normalises any stored flag key onto the four live flags.
+function wxNormFlagKey(key) { return key === 'orange' ? 'red' : (FLAG_KEYS.includes(key) ? key : ''); }
+
 const SCORE_CONFIG = {
-  // Thresholds define the score boundaries between flag colors.
-  thresholds: { yellow: 25, orange: 45, red: 65, black: 80 },
-  // All scoring weights below default to empty/zero. Admin must explicitly
-  // configure them via the Flags tab — no silent contributions to the score.
-  wind: [],
-  windDirModifier: { dirs: [], pts: 0 },   // added when wind is from a flagged direction
-  gustModifier1Pts: 0,                     // gusts exactly 1 Force level higher than sustained
-  gustModifier2Pts: 0,                     // gusts 2+ Force levels higher than sustained
-  waves: [],
-  sst: [],
-  feelsLike: [],
-  visibility: { good: 0, reduced: 0, poor: 0 },
+  // Score at or above which each flag applies.
+  thresholds: { yellow: 20, red: 40, black: 80 },
+  // Points below a threshold the score must fall before the current flag is
+  // lowered again (stops the flag flickering at a boundary between refreshes).
+  hysteresis: 5,
+  wind: [
+    { maxBft: 3,  pts: 0 },  { maxBft: 4, pts: 8 },  { maxBft: 5, pts: 20 },
+    { maxBft: 6,  pts: 40 }, { maxBft: 7, pts: 60 }, { maxBft: 12, pts: 80 },
+  ],
+  // Added when wind is from a listed (offshore) direction at Force ≥ minBft.
+  windDirModifier: { dirs: ['NNE', 'NE', 'ENE', 'E', 'ESE', 'SE'], pts: 6, minBft: 3 },
+  gustModifier1Pts: 0,                     // gusts exactly 1 Force level above sustained (normal)
+  gustModifier2Pts: 10,                    // gusts 2+ Force levels above sustained (squally)
+  waves: [
+    { maxM: 0.5, pts: 0 }, { maxM: 1, pts: 3 },  { maxM: 1.5, pts: 6 },
+    { maxM: 2,   pts: 10 }, { maxM: 3, pts: 16 }, { maxM: 99,  pts: 26 },
+  ],
+  sst: [
+    { minC: 12, pts: 0 }, { minC: 10, pts: 2 }, { minC: 8, pts: 4 },
+    { minC: 5,  pts: 7 }, { minC: 2,  pts: 10 }, { minC: -99, pts: 12 },
+  ],
+  // Scored on apparent ("feels like") temperature.
+  feelsLike: [
+    { minC: 5, pts: 0 }, { minC: 0, pts: 3 }, { minC: -5, pts: 6 }, { minC: -99, pts: 10 },
+  ],
+  visibility: { good: 0, reduced: 8, poor: 30 },
   // ─────────────────────────────────────────────────────────────────────────────
   // flags:
   //   color / bg / border / icon  — visual constants (NOT admin-editable).
@@ -66,61 +90,272 @@ const SCORE_CONFIG = {
   //   description / descriptionIS  — longer guidance shown in the detail modal.
   //
   // Advice and description (both EN + IS) are ADMIN-EDITABLE via
-  // admin/index.html → Flags tab. Edits are persisted as JSON under the
-  // `flagConfig` key in the config sheet (code.gs saveConfig/getFlagConfig_)
-  // and merged into SCORE_CONFIG.flags at page load by wxLoadFlagConfig()
-  // below. The values here are the defaults used when no override is saved.
+  // admin/index.html → Flags tab and persisted under the `flagConfig` key in
+  // app_config. The values here are the defaults used when nothing is saved.
   //
   // There is intentionally no `label` field — the colored banner plus icon
-  // already communicate the flag identity, so a textual "Green"/"Red" label
-  // would be redundant (issue #376).
+  // already communicate the flag identity (issue #376).
   // ─────────────────────────────────────────────────────────────────────────────
   flags: {
     green:  { color:'var(--green)', bg:'color-mix(in srgb, var(--green) 10%, transparent)', border:'color-mix(in srgb, var(--green) 27%, transparent)', icon:'🟢',
-              advice:'Good conditions  —  open to all qualified members.',
-              adviceIS:'Góðar aðstæður — opið öllum hæfum félögum.',
-              description:'Conditions are suitable for sailing. All qualified members may use boats according to their credential level.',
-              descriptionIS:'Aðstæður eru hæfar fyrir siglingar. Allir hæfir félagar mega taka báta út samkvæmt skírteinastigi.' },
+              advice:'Good conditions – open to all qualified members.',
+              adviceIS:'Góðar aðstæður – opið öllum félögum með tilskilin réttindi.',
+              description:'Conditions are suitable for all boats and experience levels, according to your certification. Check the guidance for your boat below.',
+              descriptionIS:'Aðstæður henta öllum bátum og reynslustigum, samkvæmt réttindum hvers og eins. Kynntu þér leiðbeiningar fyrir þinn bát hér að neðan.' },
     yellow: { color:'var(--yellow)', bg:'color-mix(in srgb, var(--yellow) 10%, transparent)', border:'color-mix(in srgb, var(--yellow) 27%, transparent)', icon:'🟡',
-              advice:'Marginal  —  experienced sailors only.',
-              adviceIS:'Jaðaraðstæður — aðeins reyndir siglingar.',
-              description:'Conditions are marginal. Only experienced sailors with strong boat-handling skills should go out. Ensure someone ashore knows your plans and expected return time.',
-              descriptionIS:'Aðstæður eru á mörkum. Aðeins reyndir siglingar áttu að fara út. Gerið ráð fyrir óvæntum breytingum og tryggist að einhver á landi viti af áætlunum ykkar.' },
+              advice:'Marginal conditions – experienced sailors, or sheltered area with safety cover.',
+              adviceIS:'Jaðaraðstæður – aðeins reyndir siglarar, eða innan Fossvogs með öryggisgæslu.',
+              description:'Conditions are marginal. Only experienced sailors with strong boat-handling skills should go out. Others may sail within Fossvogur if staff and a support boat are on duty. Check the guidance for your boat below.',
+              descriptionIS:'Aðstæður eru á mörkunum. Aðeins reyndir siglarar ættu að fara á sjó. Aðrir geta siglt innan Fossvogs ef starfsfólk og gæslubátur eru á vakt. Kynntu þér leiðbeiningar fyrir þinn bát hér að neðan.' },
+    // Legacy only — not produced by scoring any more (see header).
     orange: { color:'var(--orange)', bg:'color-mix(in srgb, var(--orange) 10%, transparent)', border:'color-mix(in srgb, var(--orange) 27%, transparent)', icon:'🟠',
-              advice:'Difficult  —  keelboats only; staff auth required for dinghies.',
-              adviceIS:'Erfiðar aðstæður — kjólbátar einungis; starfsmaður ¾arfnast heimildar.' },
+              advice:'Difficult conditions (legacy flag).',
+              adviceIS:'Erfiðar aðstæður (eldra flagg).' },
     red:    { color:'var(--red)', bg:'color-mix(in srgb, var(--red) 10%, transparent)', border:'color-mix(in srgb, var(--red) 27%, transparent)', icon:'🔴',
-              advice:'No self-service sailing  —  staff must approve each checkout.',
-              adviceIS:'Engin sjálfsafgreiðsla — starfsmaður verður að samþykkja hverja útskráningu.',
-              description:'Hazardous conditions. No self-service sailing. Staff must personally assess and authorise every checkout. Experienced keelboat sailors only with direct staff supervision.',
-              descriptionIS:'Hættuleg aðstæður. Engin sjálfsafgreiðsla. Starfsmaður verður að meta og samþykkja hverja útlágingu persónulega.' },
+              advice:'Hazardous conditions – staff or captain approval required for every checkout.',
+              adviceIS:'Hættulegar aðstæður – starfsmaður eða skipstjóri þarf að samþykkja hverja útskráningu.',
+              description:'Rescue with club equipment may be difficult or impossible. Only suitable boats may go out, with safety cover on the water, and a staff member or captain must assess and approve every checkout.',
+              descriptionIS:'Björgun með búnaði klúbbsins getur verið erfið eða ómöguleg. Aðeins hentugir bátar mega fara á sjó, með öryggisgæslu á sjónum, og starfsmaður eða skipstjóri þarf að meta aðstæður og samþykkja hverja útskráningu.' },
     black:  { color:'var(--muted)', bg:'color-mix(in srgb, var(--muted) 10%, transparent)', border:'color-mix(in srgb, var(--muted) 27%, transparent)', icon:'⚫️',
-              advice:'Water closed  —  all sailing suspended.',
-              adviceIS:'Sjór lokaður — allar siglingar stöðvaðar.',
+              advice:'Water closed – all sailing suspended.',
+              adviceIS:'Siglingasvæðið lokað – allar siglingar stöðvaðar.',
               description:'The water is closed to all sailing. All boats must remain ashore or return to harbour immediately. Check back later for updated conditions.',
-              descriptionIS:'Sjór er lokaður öllum siglingu. Allir bátar verða að vera á landi eða snara aftur til hafnar þegar á stað.' },
+              descriptionIS:'Siglingasvæðið er lokað. Allir bátar skulu vera á landi eða snúa tafarlaust aftur til hafnar. Fylgstu með uppfærðum aðstæðum.' },
   },
 };
 
+// Pristine copy taken before any saved config is merged in — what the admin
+// "Reset to defaults" button restores.
+const SCORE_CONFIG_DEFAULTS = _wxClone(SCORE_CONFIG);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FLAG GUIDANCE  —  what each flag means for each boat class and activity.
+//
+//   profiles[key][flagKey] = { s, en, is }
+//     key       — a boat category key (dinghy, keelboat, …) or a custom
+//                 profile (e.g. optimist) that individual boats point at
+//     s         — 'ok' | 'cond' (open with conditions) | 'approval' (staff or
+//                 captain must approve each checkout) | 'no' (not allowed)
+//   boatProfiles[boatId] = profile key — overrides the boat's category
+//   activities[activityTemplateId][flagKey] = { s, en, is }
+//     s         — 'go' | 'adjust' | 'cancel'
+//
+// Enforced server-side by save_checkout (see
+// supabase/migrations/20260929100000_flag_guidance.sql), which reads the same
+// structure from app_config.flagConfig.guidance. These defaults are what the
+// migration seeds and what the admin "Reset to defaults" restores; boat and
+// activity mappings reference real ids so they only live in saved config.
+// ═══════════════════════════════════════════════════════════════════════════════
+const FLAG_GUIDANCE_DEFAULTS = {
+  profiles: {
+    keelboat: {
+      green:  { s: 'ok' },
+      yellow: { s: 'ok', en: 'Reef early.', is: 'Rifið snemma.' },
+      red:    { s: 'approval', en: 'Experienced skipper, at least 2 crew, reefed.', is: 'Reyndur skipstjóri, a.m.k. 2 í áhöfn, rifað.' },
+      black:  { s: 'no' },
+    },
+    dinghy: {
+      green:  { s: 'ok', en: 'According to your certification.', is: 'Samkvæmt réttindum.' },
+      yellow: { s: 'cond', en: 'Experienced sailors only. Beginners only inside Fossvogur with staff and a support boat on duty.', is: 'Aðeins reyndir siglarar. Byrjendur aðeins innan Fossvogs þegar starfsfólk og gæslubátur eru á vakt.' },
+      red:    { s: 'approval', en: 'Experienced sailors only, support boat on the water.', is: 'Aðeins reyndir siglarar, gæslubátur á sjó.' },
+      black:  { s: 'no' },
+    },
+    optimist: {
+      labelEN: 'Optimist', labelIS: 'Optimist',
+      green:  { s: 'cond', en: 'Supervised sessions only.', is: 'Aðeins undir eftirliti.' },
+      yellow: { s: 'cond', en: 'Coached sessions with a support boat, sheltered area only.', is: 'Aðeins á æfingum með þjálfara og gæslubát, í skjóli.' },
+      red:    { s: 'no' },
+      black:  { s: 'no' },
+    },
+    wingfoil: {
+      green:  { s: 'ok' },
+      yellow: { s: 'ok' },
+      red:    { s: 'approval', en: 'Experienced riders only, support boat on the water, not in offshore wind.', is: 'Aðeins reyndir, gæslubátur á sjó, ekki í aflandsvindi.' },
+      black:  { s: 'no' },
+    },
+    kayak: {
+      green:  { s: 'ok' },
+      yellow: { s: 'cond', en: 'Experienced paddlers only. Stay inside Fossvogur, not in easterly (offshore) wind.', is: 'Aðeins reyndir ræðarar. Haldið ykkur innan Fossvogs, ekki í austlægri (aflands) átt.' },
+      red:    { s: 'no' },
+      black:  { s: 'no' },
+    },
+    rowboat: {
+      green:  { s: 'ok' },
+      yellow: { s: 'cond', en: 'Inside Fossvogur only.', is: 'Aðeins innan Fossvogs.' },
+      red:    { s: 'no' },
+      black:  { s: 'no' },
+    },
+    'rowing-shell': {
+      green:  { s: 'cond', en: 'Flat water only.', is: 'Aðeins á sléttum sjó.' },
+      yellow: { s: 'no' },
+      red:    { s: 'no' },
+      black:  { s: 'no' },
+    },
+    sup: {
+      green:  { s: 'cond', en: 'Leash and buoyancy aid; not in offshore wind.', is: 'Ól og flotvesti; ekki í aflandsvindi.' },
+      yellow: { s: 'no', en: 'Coached sessions only.', is: 'Aðeins á skipulögðum æfingum.' },
+      red:    { s: 'no' },
+      black:  { s: 'no' },
+    },
+    'support-boat': {
+      green:  { s: 'ok' },
+      yellow: { s: 'ok' },
+      red:    { s: 'ok' },
+      black:  { s: 'approval', en: 'Rescue or recovery only.', is: 'Aðeins til björgunar eða að sækja báta.' },
+    },
+  },
+  boatProfiles: {},
+  activities: {},
+};
+function _wxEsc(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function _wxClone(o) { return JSON.parse(JSON.stringify(o)); }
+let FLAG_GUIDANCE = _wxClone(FLAG_GUIDANCE_DEFAULTS);
+
+const GUIDANCE_BOAT_STATUSES = ['ok', 'cond', 'approval', 'no'];
+const GUIDANCE_ACT_STATUSES  = ['go', 'adjust', 'cancel'];
+
+// Bands are matched with .find(), so they must be in scan order: wind/waves
+// ascending by their max, sst/feelsLike descending by their min.
+function wxSortBands(cfg) {
+  if (Array.isArray(cfg.wind))      cfg.wind.sort((a, b) => a.maxBft - b.maxBft);
+  if (Array.isArray(cfg.waves))     cfg.waves.sort((a, b) => a.maxM - b.maxM);
+  if (Array.isArray(cfg.sst))       cfg.sst.sort((a, b) => b.minC - a.minC);
+  if (Array.isArray(cfg.feelsLike)) cfg.feelsLike.sort((a, b) => b.minC - a.minC);
+  return cfg;
+}
+
 function wxLoadFlagConfig(saved) {
   if (!saved) return;
-  if (saved.thresholds)              Object.assign(SCORE_CONFIG.thresholds, saved.thresholds);
+  if (saved.thresholds) {
+    for (const k of ['yellow', 'red', 'black']) {
+      if (saved.thresholds[k] != null) SCORE_CONFIG.thresholds[k] = saved.thresholds[k];
+    }
+  }
+  if (saved.hysteresis != null)      SCORE_CONFIG.hysteresis = saved.hysteresis;
   if (saved.wind?.length)            SCORE_CONFIG.wind      = saved.wind;
   if (saved.waves?.length)           SCORE_CONFIG.waves     = saved.waves;
   if (saved.sst?.length)             SCORE_CONFIG.sst       = saved.sst;
-  if (saved.feelsLike?.length)       SCORE_CONFIG.feelsLike = saved.feelsLike;
+  if (Array.isArray(saved.feelsLike)) SCORE_CONFIG.feelsLike = saved.feelsLike;
   if (saved.visibility)              Object.assign(SCORE_CONFIG.visibility, saved.visibility);
   if (saved.windDirModifier) {
-    if (saved.windDirModifier.dirs)        SCORE_CONFIG.windDirModifier.dirs = saved.windDirModifier.dirs;
-    if (saved.windDirModifier.pts != null) SCORE_CONFIG.windDirModifier.pts  = saved.windDirModifier.pts;
+    const w = saved.windDirModifier;
+    if (w.dirs)          SCORE_CONFIG.windDirModifier.dirs   = Array.from(new Set(w.dirs));
+    if (w.pts != null)   SCORE_CONFIG.windDirModifier.pts    = w.pts;
+    if (w.minBft != null) SCORE_CONFIG.windDirModifier.minBft = w.minBft;
   }
   if (saved.gustModifier1Pts != null) SCORE_CONFIG.gustModifier1Pts = saved.gustModifier1Pts;
   if (saved.gustModifier2Pts != null) SCORE_CONFIG.gustModifier2Pts = saved.gustModifier2Pts;
   if (saved.flags) {
-    for (const key of ['green','yellow','orange','red','black']) {
+    for (const key of FLAG_KEYS) {
       if (saved.flags[key]) Object.assign(SCORE_CONFIG.flags[key], saved.flags[key]);
     }
   }
+  if (saved.guidance) wxLoadFlagGuidance(saved.guidance);
+  wxSortBands(SCORE_CONFIG);
+}
+
+function wxLoadFlagGuidance(g) {
+  if (!g) { FLAG_GUIDANCE = _wxClone(FLAG_GUIDANCE_DEFAULTS); return; }
+  FLAG_GUIDANCE = {
+    profiles:     g.profiles     ? _wxClone(g.profiles)     : _wxClone(FLAG_GUIDANCE_DEFAULTS.profiles),
+    boatProfiles: g.boatProfiles ? _wxClone(g.boatProfiles) : {},
+    activities:   g.activities   ? _wxClone(g.activities)   : {},
+  };
+}
+
+// Profile key a boat is judged by: its explicit override, else its category.
+function wxBoatProfileKey(boat) {
+  if (!boat) return '';
+  const ov = boat.id && FLAG_GUIDANCE.boatProfiles[boat.id];
+  if (ov && FLAG_GUIDANCE.profiles[ov]) return ov;
+  return String(boat.category || '').toLowerCase();
+}
+
+// → { status, note, profileKey } for a boat under a flag. A boat with no
+// guidance profile (or a flag the profile doesn't mention) is 'ok'.
+function wxBoatGuidance(boat, flagKey, lang) {
+  const key = wxBoatProfileKey(boat);
+  const p = FLAG_GUIDANCE.profiles[key];
+  const e = p && p[wxNormFlagKey(flagKey)];
+  if (!e) return { status: 'ok', note: '', profileKey: key, configured: !!p };
+  const IS = (lang || (typeof getLang === 'function' ? getLang() : 'EN')) === 'IS';
+  return { status: e.s || 'ok', note: (IS && e.is) ? e.is : (e.en || e.is || ''), profileKey: key, configured: true };
+}
+
+// → { status, note } for an activity template under a flag, or null if the
+// activity has no guidance configured.
+function wxActivityGuidance(templateId, flagKey, lang) {
+  const a = templateId && FLAG_GUIDANCE.activities[templateId];
+  const e = a && a[wxNormFlagKey(flagKey)];
+  if (!e) return null;
+  const IS = (lang || (typeof getLang === 'function' ? getLang() : 'EN')) === 'IS';
+  return { status: e.s || 'go', note: (IS && e.is) ? e.is : (e.en || e.is || '') };
+}
+
+// Status icons (Lucide, MIT). Approval uses user-check — "a person signs off".
+const _GUIDANCE_ICON_PATHS = {
+  ok:       '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  go:       '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  cond:     '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  adjust:   '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  approval: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/>',
+  no:       '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+  cancel:   '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+};
+const _GUIDANCE_COLORS = {
+  ok: 'var(--green)', go: 'var(--green)', cond: 'var(--yellow)', adjust: 'var(--yellow)',
+  approval: 'var(--orange)', no: 'var(--red)', cancel: 'var(--red)',
+};
+function wxGuidanceColor(status) { return _GUIDANCE_COLORS[status] || 'var(--muted)'; }
+function wxGuidanceIcon(status) {
+  const p = _GUIDANCE_ICON_PATHS[status];
+  if (!p) return '';
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-inline" aria-hidden="true">' + p + '</svg>';
+}
+// Icon + short status word, colored. Used in the flag modal, checkout forms,
+// staff approvals and activity badges.
+function wxGuidanceChip(status) {
+  const c = wxGuidanceColor(status);
+  return '<span class="wx-guidance-chip" style="color:' + c + ';border-color:color-mix(in srgb, ' + c + ' 35%, transparent);background:color-mix(in srgb, ' + c + ' 10%, transparent)">'
+    + wxGuidanceIcon(status) + ' ' + s('wx.gd.' + status) + '</span>';
+}
+
+// Display label for a guidance profile — boat category label when the key is
+// a category, else the profile's own label.
+function wxProfileLabel(key, lang) {
+  const IS = (lang || (typeof getLang === 'function' ? getLang() : 'EN')) === 'IS';
+  const p = FLAG_GUIDANCE.profiles[key] || {};
+  if (p.labelEN || p.labelIS) return (IS && p.labelIS) ? p.labelIS : (p.labelEN || p.labelIS);
+  const cats = (typeof window !== 'undefined' && window._wxBoatCats) || [];
+  const c = cats.find(x => x.key === key);
+  if (c) return (IS && c.labelIS) ? c.labelIS : (c.labelEN || key);
+  return key.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+// Pages that know the boat categories register them so profile labels match.
+function wxRegisterBoatCats(cats) { if (typeof window !== 'undefined') window._wxBoatCats = cats || []; }
+
+// "What this means" table for the flag detail modal: one row per profile.
+function wxGuidanceTableHtml(flagKey, lang) {
+  const keys = Object.keys(FLAG_GUIDANCE.profiles);
+  if (!keys.length) return '';
+  const cats = (typeof window !== 'undefined' && window._wxBoatCats) || [];
+  // Hide profiles for inactive categories (custom profiles always show).
+  const shown = keys.filter(k => {
+    const c = cats.find(x => x.key === k);
+    return !c || (c.active !== false && c.active !== 'false');
+  });
+  const rows = shown.map(k => {
+    const e = FLAG_GUIDANCE.profiles[k][wxNormFlagKey(flagKey)] || { s: 'ok' };
+    const IS = lang === 'IS';
+    const note = (IS && e.is) ? e.is : (e.en || e.is || '');
+    return '<div class="wx-guidance-row">'
+      + '<span class="wx-guidance-name">' + _wxEsc(wxProfileLabel(k, lang)) + '</span>'
+      + wxGuidanceChip(e.s || 'ok')
+      + (note ? '<span class="wx-guidance-note">' + _wxEsc(note) + '</span>' : '')
+      + '</div>';
+  }).join('');
+  return '<div class="section-label mt-8 mb-6">' + s('wx.gd.whatThisMeans') + '</div>'
+    + '<div class="wx-guidance-table">' + rows + '</div>';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -132,7 +367,7 @@ let _FLAG_OVERRIDE = null;
 function wxLoadFlagOverride(ov) {
   if (!ov || !ov.active) { _FLAG_OVERRIDE = null; return; }
   if (ov.expiresAt && new Date(ov.expiresAt).getTime() <= Date.now()) { _FLAG_OVERRIDE = null; return; }
-  _FLAG_OVERRIDE = ov;
+  _FLAG_OVERRIDE = Object.assign({}, ov, { flagKey: wxNormFlagKey(ov.flagKey) || 'yellow' });
 }
 function wxGetFlagOverride() { return _FLAG_OVERRIDE; }
 
@@ -142,11 +377,33 @@ function wxNextMidnightUTC() {
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1, 0, 0, 0);
 }
 
-// Scores + applies override. Same return shape as wxScoreFlag, plus `override` and
-// `autoScored` when the override is active. Forecast/past-hour rendering should keep
-// using wxScoreFlag directly so trajectories still reflect the scoring model.
+// Hysteresis: raise the flag as soon as the score crosses a threshold, but
+// only lower it once the score is `hysteresis` points below the threshold of
+// the flag currently shown. The last shown flag is remembered per device for
+// two hours so a page reload doesn't reset it.
+const _HYST_KEY = 'ymir_flag_hyst';
+const _HYST_TTL = 2 * 3600 * 1000;
+function _wxApplyHysteresis(scored) {
+  const H = Number(SCORE_CONFIG.hysteresis) || 0;
+  let prev = null;
+  try { prev = JSON.parse(localStorage.getItem(_HYST_KEY) || 'null'); } catch (e) {}
+  let key = scored.flagKey;
+  if (H > 0 && prev && FLAG_KEYS.includes(prev.k) && Date.now() - prev.t < _HYST_TTL
+      && wxFlagRank(key) < wxFlagRank(prev.k)) {
+    const thr = SCORE_CONFIG.thresholds[prev.k];
+    if (thr != null && scored.score > thr - H) key = prev.k;
+  }
+  try { localStorage.setItem(_HYST_KEY, JSON.stringify({ k: key, t: Date.now() })); } catch (e) {}
+  if (key === scored.flagKey) return scored;
+  return { ...scored, flagKey: key, flag: SCORE_CONFIG.flags[key], held: true };
+}
+
+// Scores + applies hysteresis + override. Same return shape as wxScoreFlag,
+// plus `override` and `autoScored` when the override is active. Use this for
+// the *current* flag only; forecast/past-hour rendering should call
+// wxScoreFlag directly so trajectories reflect the raw scoring model.
 function wxFlagNow(ws, wDir, waveH, airT, sst, wg, visKey) {
-  const scored = wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey);
+  const scored = _wxApplyHysteresis(wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey));
   if (!_FLAG_OVERRIDE) return { ...scored, override: null, autoScored: null };
   const ov = _FLAG_OVERRIDE;
   const flag = SCORE_CONFIG.flags[ov.flagKey] || scored.flag;
@@ -160,7 +417,6 @@ function wxFlagNow(ws, wDir, waveH, airT, sst, wg, visKey) {
     autoScored: scored,
   };
 }
-
 
 // ── Unit helpers ───────────────────────────────────────────────────────────────────────────────
 function wxMsToBft(ms) {
@@ -196,10 +452,12 @@ function wxCondDesc(c)  {
 
 /**
  * wxScoreFlag  —  points-based flag assessment.
+ * Every caller should pass every factor it has; a null factor scores 0, so
+ * leaving one out silently lowers the flag.
  * @param {number} ws      wind speed m/s
- * @param {string} wDir    compass direction e.g. 'NE'
+ * @param {string} wDir    compass direction e.g. 'NE' (or degrees)
  * @param {number} waveH   wave height metres (null/0 if unknown)
- * @param {number} airT    feels-like air temp °C (null if unknown)
+ * @param {number} airT    apparent ("feels like") air temp °C (null if unknown)
  * @param {number} sst     sea surface temp °C (null if unknown)
  * @param {number} wg      wind gusts m/s (null if unknown)
  * @param {string} visKey  'good'|'reduced'|'poor' (default 'good')
@@ -220,7 +478,8 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
 
   const dir = (typeof wDir === 'number' ? wxDirLabel(wDir) : (wDir || '')).toUpperCase().trim();
   const wdm = cfg.windDirModifier;
-  if (dir && wdm.pts > 0 && wdm.dirs.includes(dir) && bft > 0) {
+  const wdmMin = wdm.minBft != null ? wdm.minBft : 1;
+  if (dir && wdm.pts > 0 && wdm.dirs.includes(dir) && bft >= wdmMin) {
     score += wdm.pts;
     breakdown.push({ factor:'direction', pts:wdm.pts,
       label: s('wx.bdWindDir', { dir }) });
@@ -272,11 +531,10 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
   }
 
   const t = cfg.thresholds;
-  const flagKey = score >= t.black ? 'black' : score >= t.red ? 'red' : score >= t.orange ? 'orange' : score >= t.yellow ? 'yellow' : 'green';
+  const flagKey = score >= t.black ? 'black' : score >= t.red ? 'red' : score >= t.yellow ? 'yellow' : 'green';
   return { flagKey, flag: cfg.flags[flagKey], score, breakdown,
     reasons: breakdown.map(b => ({ f: flagKey, t: b.label })) };
 }
-
 
 // ── Staff status badge HTML ─────────────────────────────────────────────────────────────────────
 function wxStaffStatusHtml(status) {
@@ -342,7 +600,6 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
   const pct = Math.min(100, Math.round(result.score / maxScore * 100));
   const markers = [
     { pct: Math.round(t.yellow/maxScore*100), key:'yellow' },
-    { pct: Math.round(t.orange/maxScore*100), key:'orange' },
     { pct: Math.round(t.red   /maxScore*100), key:'red'    },
     { pct: Math.round(t.black /maxScore*100), key:'black'  },
   ];
@@ -396,6 +653,15 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
         ).join('')
       + '</div>'
     : '';
+  // What the current flag means per boat class, plus footnotes: flag held by
+  // hysteresis, wave data from the offshore fallback point, and the reminder
+  // that club flags are not Veðurstofa warnings.
+  const guidanceHtml = wxGuidanceTableHtml(result.flagKey, IS ? 'IS' : 'EN');
+  const footHtml = '<div class="wx-flag-foot">'
+    + (result.held ? '<div>' + s('wx.flagHeld', { n: SCORE_CONFIG.hysteresis }) + '</div>' : '')
+    + (result.marineFallback ? '<div>' + s('wx.marineFallback') + '</div>' : '')
+    + '<div>' + s('wx.notMetWarning') + '</div>'
+    + '</div>';
   // ── Override mode: show manual notes instead of score breakdown ─────────────
   if (result.override) {
     const ov = result.override;
@@ -414,7 +680,8 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
       + (setBy ? setBy + ' · ' : '') + (setTime ? setTime + ' · ' : '') + expText
       + '</div>'
       + '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">'+s('wx.autoScoreWouldBe')+'</div>'
-      + '<div style="font-size:11px;color:var(--muted);padding:4px 0">' + s('wx.totalScore') + ': ' + result.score + '</div>';
+      + '<div style="font-size:11px;color:var(--muted);padding:4px 0">' + s('wx.totalScore') + ': ' + result.score + '</div>'
+      + guidanceHtml + footHtml;
   }
   return _ssBadgesHtml + '<div style="background:'+flag.bg+';border:1px solid '+flag.border+';border-radius:8px;padding:12px 14px;margin-bottom:14px">'
     + '<div style="font-size:28px;margin-bottom:6px">'+flag.icon+'</div>'
@@ -424,7 +691,8 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
     + chipsHtml
     + barHtml
     + '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">'+s('wx.scoreBreakdown')+'</div>'
-    + rows + totalRow;
+    + rows + totalRow
+    + guidanceHtml + footHtml;
 }
 
 
@@ -500,7 +768,7 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
 
   // ── 2. Open-Meteo hourly + current  —  chart data + fills nulls left by BIRK ──────────
   // Pinned to ICON-EU (6.5km, DWD) for consistent source across all variables including visibility.
-  const hourlyParams = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,visibility';
+  const hourlyParams = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,visibility,apparent_temperature';
   const currentParams = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,apparent_temperature,surface_pressure,weather_code,visibility';
   const hourlyUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     `&hourly=${hourlyParams}&current=${currentParams}&models=icon_eu&forecast_hours=9&past_hours=3&timezone=auto&wind_speed_unit=ms`;
@@ -523,7 +791,9 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
         if (!r.ok) {
           const fb = WX_MARINE_FALLBACK;
           return fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${fb.lat}&longitude=${fb.lon}&current=${marineParams}&hourly=${marineParams}&past_hours=3&forecast_hours=9&timezone=auto`)
-            .then(r2 => r2.ok ? r2.json() : null);
+            // Tag the offshore fallback so the flag modal can say the wave
+            // figure is from open water, not Fossvogur itself.
+            .then(r2 => r2.ok ? r2.json() : null).then(d2 => { if (d2) d2._fallback = true; return d2; });
         }
         return r.json();
       })
@@ -580,7 +850,7 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
     // Hourly data for chart  —  from Open-Meteo (or empty fallback)
     hourly: hourlyData?.hourly ?? {
       time: [], wind_speed_10m: [], wind_direction_10m: [],
-      wind_gusts_10m: [], surface_pressure: [], visibility: [],
+      wind_gusts_10m: [], surface_pressure: [], visibility: [], apparent_temperature: [],
     },
   };
 
@@ -698,7 +968,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
       const waveH = mc?.wave_height ?? null;
       const sst   = mc?.sea_surface_temperature ?? null;
       const pres  = c.surface_pressure;
-      const _flagResult = wxFlagNow(ws, wDir, waveH ?? 0, c.temperature_2m, sst, wg, wxVisKey(c.visibility));
+      const _flagResult = wxFlagNow(ws, wDir, waveH ?? 0, c.apparent_temperature ?? c.temperature_2m, sst, wg, wxVisKey(c.visibility));
       const { flagKey, flag, score, breakdown, reasons, override } = _flagResult;
 
       const nowISO = new Date().toISOString().slice(0,13);
@@ -773,7 +1043,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
           <div class="wx-status-badges" style="display:flex;flex-wrap:wrap;gap:5px"></div>
         </div>`;
       targetEl._wxRefresh = refresh;
-      targetEl._wxResult  = { flagKey, flag, score, breakdown, reasons, override, snap: { ws, wDir, waveH, temperature_2m: c.temperature_2m, sst, wg } };
+      targetEl._wxResult  = { flagKey, flag, score, breakdown, reasons, override, held: _flagResult.held, marineFallback: !!marine?._fallback, snap: { ws, wDir, waveH, temperature_2m: c.temperature_2m, sst, wg } };
       ensureWxFlagModal();
 
       // ── Wire flag pill click  —  uses snap stored on this element ──

@@ -42,6 +42,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     onData: snap => {
       wxData = snap;
       updateFlagCard(snap);
+      renderTodayActivities();
+      renderCoGuidance();
     },
   }).start();
 
@@ -59,6 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Stash activity templates on window so the Group Checkout picker can
     // build its classTag list.
     window._activityTemplates = cfgRes.activityTemplates || [];
+    window._cancelledOccurrences = cfgRes.cancelledActivityOccurrences || [];
     checkouts   = coRes.checkouts  || [];
     boats       = (cfgRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
     boatRegistry.setBoats(boats);
@@ -80,6 +83,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     populateSelects();
     renderAll();
     renderMaintenance();
+    renderTodayActivities();
+    // Flag-approval requests arrive from members at any time — refresh the
+    // checkout list on a short interval so the queue stays current.
+    setInterval(refreshCheckoutsForApprovals, 30000);
 
     // Incidents needing review / follow-up — badge on nav card
     apiGet('getIncidents').then(r => {
@@ -131,7 +138,7 @@ function updateFlagCard(snap) {}
 // ── Selects ───────────────────────────────────────────────────────────────────
 function populateSelects() {
   const bSel   = document.getElementById('coBoat');
-  const active = checkouts.filter(c => c.status === 'out');
+  const active = checkouts.filter(c => c.status === 'out' || c.status === 'pending');
   boats.filter(b => !active.find(c => c.boatId === b.id) && !boolVal(b.oos))
     .forEach(b => {
       const o = document.createElement('option'); o.value=b.id;
@@ -148,6 +155,7 @@ function populateSelects() {
 
 // ── Render all ────────────────────────────────────────────────────────────────
 function renderAll() {
+  renderPendingApprovals();
   renderStats();
   renderCheckouts();
   renderRecentCheckins();
@@ -556,6 +564,7 @@ function closeCoDetail() { closeModal('coDetailModal'); }
 function onCoBoatChange() {
   const bid  = document.getElementById('coBoat').value;
   const boat = boats.find(b => b.id === bid);
+  renderCoGuidance();
   const isKeel = (boat?.category || '').toLowerCase() === 'keelboat';
   const portRow = document.getElementById('coPortRow');
   portRow.style.display = isKeel ? '' : 'none';
@@ -572,6 +581,23 @@ function onCoBoatChange() {
     }
   } else {
     document.getElementById('coDeparturePort').value = '';
+  }
+}
+
+function renderCoGuidance() {
+  const bid  = document.getElementById('coBoat').value;
+  const boat = boats.find(b => b.id === bid);
+  // Advisory for staff (they aren't gated): what the current flag means for
+  // this boat, so a checkout under an "approval"/"not allowed" flag is a
+  // deliberate call. Recorded server-side as the approval.
+  const gEl = document.getElementById('coGuidance');
+  if (gEl) {
+    const fk = wxData && wxData.flagKey;
+    const g  = boat && fk ? wxBoatGuidance(boat, fk) : null;
+    gEl.innerHTML = g && (g.status !== 'ok' || g.note)
+      ? '<div class="text-xs">' + wxGuidanceChip(g.status) + (g.note ? ' <span class="text-muted">' + esc(g.note) + '</span>' : '')
+        + (g.status === 'approval' || g.status === 'no' ? '<div class="text-muted mt-2">' + s('staff.guidanceStaffNote') + '</div>' : '') + '</div>'
+      : '';
   }
 }
 
@@ -783,7 +809,7 @@ async function openGroupModal() {
   document.getElementById('gmNewActName').value = '';
   document.getElementById('gmNewActTag').value  = '';
   const grid = document.getElementById('gmBoatGrid');
-  const active = checkouts.filter(c => c.status === 'out');
+  const active = checkouts.filter(c => c.status === 'out' || c.status === 'pending');
   grid.innerHTML = '';
   boats.filter(b => b.active !== false && b.active !== 'false').forEach(b => {
     const out = active.find(c => c.boatId === b.id);
@@ -1164,7 +1190,7 @@ function renderFoFlagBtns() {
   const container = document.getElementById('foFlagBtns');
   if (!container || typeof SCORE_CONFIG === 'undefined') return;
   const IS = (typeof getLang === 'function' && getLang() === 'IS');
-  container.innerHTML = ['green','yellow','orange','red','black'].map(k => {
+  container.innerHTML = FLAG_KEYS.map(k => {
     const f = SCORE_CONFIG.flags[k]; if (!f) return '';
     const selected = k === _foDraftFlag;
     const advice = (IS && f.adviceIS) ? f.adviceIS : (f.advice || k);
@@ -1180,7 +1206,7 @@ function toggleFlagOverrideForm(show) {
   const caret  = document.getElementById('foCaret');
   const wantShow = (typeof show === 'boolean') ? show : form.classList.contains('hidden');
   if (wantShow) {
-    _foDraftFlag = (_flagOverride?.flagKey) || 'yellow';
+    _foDraftFlag = wxNormFlagKey(_flagOverride?.flagKey) || 'yellow';
     document.getElementById('foNotes').value   = _flagOverride?.notes   || '';
     document.getElementById('foNotesIS').value = _flagOverride?.notesIS || '';
     form.classList.remove('hidden');
@@ -1239,6 +1265,118 @@ async function clearFlagOverride() {
     document.getElementById('wxWidget')?._wxRefresh?.();
     showToast(s('staff.flagOverrideSaveFail'), 'warn');
   }
+}
+
+// ══ FLAG APPROVALS ══════════════════════════════════════════════════════════
+// Member checkouts whose boat guidance is "approval" under the current flag
+// land here as status 'pending' (see save_checkout); decide_checkout moves
+// them to 'out' or 'denied'.
+function renderPendingApprovals() {
+  const card = document.getElementById('pendingApprovalsCard');
+  const list = document.getElementById('pendingApprovals');
+  if (!card || !list) return;
+  const pending = checkouts.filter(c => c.status === 'pending');
+  card.classList.toggle('d-none', !pending.length);
+  document.getElementById('pendingApprovalsCount').textContent = pending.length ? String(pending.length) : '';
+  list.innerHTML = pending.map(c => {
+    const flag = SCORE_CONFIG.flags[c.flagKey];
+    const boat = boats.find(b => b.id === c.boatId) || { id: c.boatId, category: c.boatCategory };
+    const g = c.flagKey ? wxBoatGuidance(boat, c.flagKey) : { status: 'approval', note: s('staff.flagUnknown') };
+    const times = [sstr(c.checkedOutAt).slice(0, 5), c.expectedReturn].filter(Boolean).join('–');
+    const crewN = parseInt(c.crew) || 1;
+    return '<div class="approval-card">'
+      + '<div class="flex-1">'
+      +   '<div class="fw-500">' + (flag ? flag.icon + ' ' : '') + esc(c.boatName || '') + ' · ' + esc(c.memberName || '')
+      +     (c.memberIsMinor ? ' <span class="text-orange" title="' + esc(s('staff.minor')) + '">⚠️</span>' : '') + '</div>'
+      +   '<div class="text-xs text-muted mt-2">' + esc([times, c.locationName, crewN > 1 ? s('staff.crewN', { n: crewN }) : ''].filter(Boolean).join(' · ')) + '</div>'
+      +   '<div class="text-xs mt-4">' + wxGuidanceChip(g.status) + (g.note ? ' <span class="text-muted">' + esc(g.note) + '</span>' : '') + '</div>'
+      + '</div>'
+      + '<div class="d-flex gap-6 items-center">'
+      +   '<button class="btn btn-secondary btn-sm" data-staff-click="denyCheckoutRequest" data-staff-arg="' + esc(c.id) + '">' + s('staff.deny') + '</button>'
+      +   '<button class="btn btn-primary btn-sm" data-staff-click="approveCheckoutRequest" data-staff-arg="' + esc(c.id) + '">' + s('staff.approve') + '</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+async function _decideCheckout(id, approve, note) {
+  const co = checkouts.find(c => c.id === id);
+  await callSupabaseRpc('decide_checkout', { p_id: id, p_approve: approve, p_note: note || '' });
+  _invalidateApiCache('getActiveCheckouts');
+  if (co) co.status = approve ? 'out' : 'denied';
+  // Crew confirmations were held back while the request was pending.
+  if (approve && co && co.crewNames) {
+    let crew = [];
+    try { crew = JSON.parse(co.crewNames) || []; } catch (e) {}
+    crew.filter(cn => cn && cn.kennitala && !cn.guest).forEach(cn => {
+      apiPost('createConfirmation', {
+        type: 'crew_assigned',
+        fromKennitala: co.memberKennitala, fromName: co.memberName,
+        toKennitala: cn.kennitala, toName: cn.name,
+        linkedCheckoutId: co.id,
+        boatId: co.boatId, boatName: co.boatName, boatCategory: co.boatCategory || '',
+        locationId: co.locationId, locationName: co.locationName,
+        date: todayISO(), timeOut: sstr(co.checkedOutAt).slice(0, 5),
+        role: 'crew', wxSnapshot: co.wxSnapshot || '',
+      }).catch(e2 => console.warn('crew confirmation failed for', cn, e2.message));
+    });
+  }
+  checkouts = (await apiGet('getActiveCheckouts')).checkouts || checkouts;
+  renderAll();
+}
+async function approveCheckoutRequest(id) {
+  try { await _decideCheckout(id, true, ''); showToast(s('staff.requestApproved')); }
+  catch (e) { ymAlert(s('toast.error') + ': ' + e.message); }
+}
+async function denyCheckoutRequest(id) {
+  const note = await ymPrompt(s('staff.denyReason'), '');
+  if (note === null) return;
+  try { await _decideCheckout(id, false, note.trim()); showToast(s('staff.requestDenied')); }
+  catch (e) { ymAlert(s('toast.error') + ': ' + e.message); }
+}
+let _approvalRefreshing = false;
+async function refreshCheckoutsForApprovals() {
+  if (_approvalRefreshing) return;
+  _approvalRefreshing = true;
+  try {
+    const before = checkouts.filter(c => c.status === 'pending').map(c => c.id).join(',');
+    _invalidateApiCache('getActiveCheckouts');
+    checkouts = (await apiGet('getActiveCheckouts')).checkouts || checkouts;
+    const after = checkouts.filter(c => c.status === 'pending');
+    if (after.map(c => c.id).join(',') !== before) {
+      if (after.some(c => before.indexOf(c.id) === -1)) showToast(s('staff.newApprovalRequest'), 'warn');
+      renderAll();
+    }
+  } catch (e) { /* silent — next tick retries */ }
+  finally { _approvalRefreshing = false; }
+}
+
+// ══ TODAY'S ACTIVITIES × FLAG ═══════════════════════════════════════════════
+// Scheduled activities for today with the guidance for the current flag
+// (go / adjust / cancel), from flagConfig.guidance.activities.
+function renderTodayActivities() {
+  const card = document.getElementById('todayActsCard');
+  const list = document.getElementById('todayActsList');
+  if (!card || !list || typeof buildUpcomingEvents !== 'function') return;
+  const today = todayISO();
+  const evs = buildUpcomingEvents({
+    activityTemplates: window._activityTemplates || [],
+    fromIso: today, toIso: today,
+    cancelledActivityOccurrences: window._cancelledOccurrences || [],
+  }).filter(ev => !ev.signupRequired);
+  const fk = wxData && wxData.flagKey;
+  card.classList.toggle('d-none', !evs.length);
+  const IS = getLang() === 'IS';
+  list.innerHTML = evs.map(ev => {
+    const g = fk ? wxActivityGuidance(ev.activityTypeId, fk) : null;
+    const title = (IS && ev.titleIS) ? ev.titleIS : ev.title;
+    const time = [ev.startTime, ev.endTime].filter(Boolean).join('–');
+    return '<div class="act-flag-row">'
+      + '<span class="flex-1"><span class="fw-500">' + esc(title) + '</span>' + (time ? ' <span class="text-xs text-muted">' + esc(time) + '</span>' : '') + '</span>'
+      + (g ? wxGuidanceChip(g.status) + (g.note ? ' <span class="text-xs text-muted act-flag-note">' + esc(g.note) + '</span>' : '')
+           : '<span class="text-xs text-muted">' + s(fk ? 'staff.noActGuidance' : 'lbl.loading') + '</span>')
+      + '</div>';
+  }).join('');
 }
 
 // ══ GUEST SUPPORT ═══════════════════════════════════════════════════════════
