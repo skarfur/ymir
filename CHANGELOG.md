@@ -3,6 +3,18 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — fix: maintenance issues wouldn't resolve
+
+- `maintenance.resolved_by` was a `members(id)` uuid column, but every
+  resolve path sends a display name, so Postgres rejected each resolve and
+  the detail modal's Confirm silently did nothing. Migration
+  `20260929110000_maintenance_resolved_by_text.sql` makes it text and
+  converts existing ids to member names (same fix as `reported_by` earlier).
+- `resolve-maintenance` accepts `resolvedBy` (or the modal's old `by`),
+  falls back to the session member's name, and returns 404 for an unknown id.
+- `shared/maintenance.js`: the modal sends `resolvedBy`, and a failed
+  confirm action now shows an error instead of being swallowed.
+
 ## Unreleased (Supabase branch) — weather flags: four flags, guidance per boat class and activity, approval gate
 
 Recalibrated scoring, guidance tables, and a server-side checkout gate. Needs

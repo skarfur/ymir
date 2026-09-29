@@ -135,7 +135,14 @@ function maintOpenDetail(r, currentUser) {
 
   function doConfirm(msg, cb) {
     document.getElementById('maintConfirmMsg').textContent = msg;
-    document.getElementById('maintConfirmOk').onclick = () => { closeModal('maintConfirmModal'); cb(); };
+    // cb is async; surface a failed save instead of leaving the modal
+    // looking as if nothing happened.
+    document.getElementById('maintConfirmOk').onclick = () => {
+      closeModal('maintConfirmModal');
+      Promise.resolve().then(cb).catch(e => {
+        if (typeof ymAlert === 'function') ymAlert(s('logbook.errGeneric', { msg: e.message }));
+      });
+    };
     openModal('maintConfirmModal');
   }
 
@@ -501,7 +508,7 @@ function maintOpenDetail(r, currentUser) {
       doConfirm(isSauma ? s('maint.completeConfirm') : s('maint.resolveConfirm2'), async ()=>{
         const now=new Date().toISOString().slice(0,16);
         const by=getBy();
-        await apiPost('resolveMaintenance',{id:r.id,by});
+        await apiPost('resolveMaintenance',{id:r.id,resolvedBy:by});
         r.resolved=true;r.resolvedAt=now;r.resolvedBy=by;
         renderAndWire();
         if(typeof renderList==='function') renderList();
