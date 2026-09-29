@@ -3,6 +3,20 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — cache-bust admin page assets
+
+After the admin redesign deployed, a browser could pair the new
+`admin/index.html` with a cached old `admin.js`: the sidebar buttons call
+`adminNav()`, which the old script doesn't define, so clicks did nothing.
+
+- `tools/stamp-assets.js` (new): sets `?v=<UTC timestamp>` on a page's local
+  `<script src>` / `<link href>` .js/.css references; CDN URLs are untouched.
+  Idempotent — re-running replaces the old stamp.
+- `admin/index.html`: all local assets stamped.
+- `shared/strings.js`: forwards its own `?v=` query to the `strings-{en,is}.js`
+  file it injects, so the language file can't come from a stale cache either.
+  No effect on pages without a stamp.
+
 ## Unreleased (Supabase branch) — remove captain data from public dashboard
 
 - `public/public.js`, `public/public.css`: the "Captain Data" section

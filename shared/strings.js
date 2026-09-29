@@ -12,6 +12,9 @@
   if (typeof _STRINGS_FLAT !== 'undefined') return;  // already loaded
   var here = document.currentScript && document.currentScript.src;
   var base = here ? here.substring(0, here.lastIndexOf('/') + 1) : '';
+  // Carry this script's cache-busting query (?v=…, see tools/stamp-assets.js)
+  // onto the language file so the two can't be served from different deploys.
+  var ver = (here && here.indexOf('?') >= 0) ? here.slice(here.indexOf('?')) : '';
   var lang = (localStorage.getItem('ymirLang') || 'IS').toLowerCase();
   if (lang !== 'en' && lang !== 'is') lang = 'is';
   // Sync <html lang> to the active UI language so screen readers, search
@@ -21,7 +24,7 @@
   // server-rendered lang-aware text (none today, but future-proof) is
   // consistent with the strings about to be applied.
   try { document.documentElement.lang = lang; } catch (e) {}
-  document.write('<script src="' + base + 'strings-' + lang + '.js"><\/script>');
+  document.write('<script src="' + base + 'strings-' + lang + '.js' + ver + '"><\/script>');
 })();
 
 window.s = function s(key, vars, lang) {

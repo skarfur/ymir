@@ -206,6 +206,7 @@ it. Any new member-facing checkout path must go through the same gate.
 - `node tools/check-strings.js` — fails if `shared/strings-en.js` and `shared/strings-is.js` are missing keys in either direction. Zero dependencies.
 - `node tools/check-syntax.js` — runs `node --check` over every `.js` and `.gs` file. Catches parse errors immediately.
 - `npm run check` — runs both of the above plus ESLint + Prettier (the latter two are non-blocking in CI until rules settle).
+- `node tools/stamp-assets.js <portal>/index.html` — cache-busts that page's local `<script src>` / `<link href>` references with `?v=<UTC timestamp>`. Re-run it for any portal whose JS/CSS you change (the admin page is stamped today; other portals can adopt it the same way). GitHub Pages lets browsers cache assets ~10 min, so without it a deploy can pair new HTML with a stale script. `shared/strings.js` forwards its own `?v=` to the language file it loads.
 
 ## Version history
 
