@@ -3,6 +3,16 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — public dashboard reads from Supabase
+
+- New Edge Function `supabase/functions/public-dashboard` ports
+  `publicDashboard_` (public.gs) with the same response shape, so
+  `/public/` now shows Supabase data instead of the old Google Sheets data.
+  It's public (deploy with verify_jwt disabled), exposes only the fields the
+  Apps Script endpoint already did, caches for 15s in-isolate, and pages
+  through `trips` past PostgREST's 1000-row cap.
+- `shared/api.js`: `dashboard` routes to `public-dashboard`.
+
 ## Unreleased (Supabase branch) — public dashboard no longer bounces to login
 
 - `shared/api.js`: a 401 from a Supabase-routed action only triggers the

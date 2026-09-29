@@ -538,6 +538,9 @@ var _SUPABASE_ACTIONS = {
   getCrewBoard:       'get-crew-board',
   getCrewInvites:     'get-crew-invites',
   getDailyLog:        'get-daily-log',
+  // /public/'s anonymous dashboard — public (verify_jwt disabled), no
+  // session sent or required. Ported from Apps Script's publicDashboard_.
+  dashboard:          'public-dashboard',
   // saveCheckout/checkIn/deleteCheckout/saveGroupCheckout/groupCheckIn/
   // saveBoatOos/saveBoatAccess/saveReservation/removeReservation: admin-or-
   // self / staff-or-admin RLS gate + Postgres RPC (see member/member.js,
