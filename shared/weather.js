@@ -481,7 +481,8 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
 
   // ── 1. BIRK current observations  —  via backend proxy (skipped for non-club locations) ──
   // The proxy (Supabase Edge Function `weather`, see supabase/functions/weather)
-  // fetches Vedur.is server-side (CORS-blocked from browsers) fresh on every
+  // fetches METAR BIRK (half-hourly + SPECI) and Vedur.is station 1477
+  // (hourly) server-side in parallel and returns the newer one, fresh on every
   // call, with no caching of its own — the whole widget was blocking on this
   // one leg for up to 5s whenever Vedur.is was slow, even though the other
   // two legs (Open-Meteo) typically settle in well under a second. Capped
@@ -535,8 +536,9 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
   ]);
 
   // ── Map BIRK obs into the wx.current shape the rest of the code expects
-  // Backend (`getWeather_` in weather.gs) returns m/s for wspd/wgst, degrees
-  // for wdir, °C for temp, hPa for slp (null at Vedur). All match the site's
+  // Backend (Edge Function `weather`) returns m/s for wspd/wgst (METAR knots
+  // are converted server-side), degrees for wdir, °C for temp, hPa for slp
+  // (METAR QNH; null when only Vedur answered). All match the site's
   // internal canonical units so values pass straight through.
   const obs   = birkRes?.obs ?? {};
   const wdDeg = (obs.wdir != null && obs.wdir !== 'VRB') ? Number(obs.wdir) : null;

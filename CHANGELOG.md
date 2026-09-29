@@ -3,6 +3,18 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — weather: half-hourly BIRK observations
+
+- `supabase/functions/weather/index.ts`: the `weather` Edge Function now
+  fetches METAR BIRK (aviationweather.gov JSON API; every 30 min plus SPECI
+  on significant changes) in parallel with Vedur.is station 1477 (hourly)
+  and returns whichever observation is newer. METAR wind is converted from
+  knots to m/s. Nulls are filled from the other source: QNH pressure from
+  METAR (Vedur 1477 has none), and gust from Vedur's FG when METAR omits
+  it and the Vedur report is ≤90 min older. Each upstream has a 1.7s
+  timeout, so one slow or failing source falls back to the other. The
+  response shape is unchanged; `_source` is `METAR:BIRK` or `Vedur:1477`.
+
 ## Unreleased (Supabase branch) — admin: grouped sidebar, member list + detail, quick search
 
 Frontend-only redesign of the admin shell (option "J" from the UI-alternatives
