@@ -1,8 +1,8 @@
 # Project labels (mail merge)
 
 Prints the **description** of every open saumaklúbbur and maintenance project
-on sticky labels. Sheet layout: **Avery L7160** (A4, 3 × 7, 63.5 × 38.1 mm),
-also sold as "21 per sheet" by most brands.
+on sticky labels. Sheet layout: **Avery L7182** (A4, 2 × 8, 105 × 37 mm,
+edge to edge), also sold as "16 per sheet, 105 × 37" by most brands.
 
 | File | What it is |
 | --- | --- |
@@ -21,7 +21,9 @@ also sold as "21 per sheet" by most brands.
    (choose *Unicode (UTF-8)* if Word asks for an encoding, so Icelandic letters
    survive).
 5. **Finish & Merge → Edit Individual Documents** → check → print at
-   **100 % / "Actual size"**.
+   **100 % / "Actual size"**. The labels run to the paper edge, so Word may warn
+   that margins are outside the printable area — choose **Ignore**; text is
+   padded 6 mm in from each edge.
 
 ## Skip the merge
 

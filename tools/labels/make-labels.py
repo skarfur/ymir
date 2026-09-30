@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the project-label mail-merge files (Avery L7160 / A4, 3x7, 63.5x38.1mm).
+"""Build the project-label mail-merge files (Avery L7182 / A4, 2x8, 105x37mm).
 
   python3 tools/labels/make-labels.py
       -> writes project-labels-template.docx (Word mail-merge main document,
@@ -20,17 +20,20 @@ from xml.sax.saxutils import escape
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-# Avery L7160 geometry, in twips (1 mm = 56.6929 twips).
+# Avery L7182 geometry, in twips (1 mm = 56.6929 twips): 2 x 8 labels of
+# 105 x 37 mm, edge to edge with no gaps; the 8 rows use 296 of A4's 297 mm.
 def mm(v):
     return round(v * 56.6929)
 
-COLS, ROWS = 3, 7
-LABEL_W, LABEL_H, GAP_W = mm(63.5), mm(38.1), mm(2.5)
-# Bottom margin is smaller than the sheet's real 15.2 mm so the paragraph Word
-# requires after a table still fits on a full page instead of spilling a blank one.
-MARGIN_TOP, MARGIN_SIDE, MARGIN_BOTTOM = mm(15.1), mm(7.2), mm(10.0)
+COLS, ROWS = 2, 8
+LABEL_W, LABEL_H, GAP_W = mm(105), mm(37), 0
+# The paragraph Word requires after a table goes in the last half millimetre;
+# no bottom margin, or a full page would spill a blank one.
+MARGIN_TOP, MARGIN_SIDE, MARGIN_BOTTOM = mm(0.5), 0, 0
+# Inner padding keeps text clear of the sheet edge, which printers can't reach.
+PAD_X, PAD_Y = mm(6), mm(3)
 PER_PAGE = COLS * ROWS
-FONT, SIZE_HALF_PT = "Arial", 18  # 9 pt
+FONT, SIZE_HALF_PT = "Arial", 20  # 10 pt
 
 def run(text):
     return (
@@ -61,26 +64,27 @@ def label_table(bodies):
     grid = []
     for c in range(COLS):
         grid.append(LABEL_W)
-        if c < COLS - 1:
+        if GAP_W and c < COLS - 1:
             grid.append(GAP_W)
     rows = []
     for r in range(len(bodies) // COLS):
         cells = []
         for c in range(COLS):
             cells.append(cell(LABEL_W, bodies[r * COLS + c]))
-            if c < COLS - 1:
+            if GAP_W and c < COLS - 1:
                 cells.append(cell(GAP_W, "", v_align=False))
         rows.append(
             '<w:tr><w:trPr><w:trHeight w:val="%d" w:hRule="exact"/>'
             '<w:cantSplit/></w:trPr>%s</w:tr>' % (LABEL_H, "".join(cells))
         )
     return (
-        '<w:tbl><w:tblPr><w:tblW w:w="%d" w:type="dxa"/><w:tblLayout w:type="fixed"/>'
-        '<w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="%d" w:type="dxa"/>'
-        '<w:bottom w:w="0" w:type="dxa"/><w:right w:w="%d" w:type="dxa"/></w:tblCellMar>'
+        '<w:tbl><w:tblPr><w:tblW w:w="%d" w:type="dxa"/><w:tblInd w:w="0" w:type="dxa"/>'
+        '<w:tblLayout w:type="fixed"/>'
+        '<w:tblCellMar><w:top w:w="%d" w:type="dxa"/><w:left w:w="%d" w:type="dxa"/>'
+        '<w:bottom w:w="%d" w:type="dxa"/><w:right w:w="%d" w:type="dxa"/></w:tblCellMar>'
         '<w:tblLook w:val="0000"/></w:tblPr><w:tblGrid>%s</w:tblGrid>%s</w:tbl>'
         % (
-            sum(grid), mm(2.5), mm(2.5),
+            sum(grid), PAD_Y, PAD_X, PAD_Y, PAD_X,
             "".join('<w:gridCol w:w="%d"/>' % g for g in grid),
             "".join(rows),
         )
@@ -108,6 +112,8 @@ CONTENT_TYPES = (
     '<Default Extension="xml" ContentType="application/xml"/>'
     '<Override PartName="/word/document.xml" '
     'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+    '<Override PartName="/word/settings.xml" '
+    'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>'
     "</Types>"
 )
 RELS = (
@@ -118,11 +124,30 @@ RELS = (
     'Target="word/document.xml"/></Relationships>'
 )
 
+DOC_RELS = (
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    '<Relationship Id="rId1" '
+    'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" '
+    'Target="settings.xml"/></Relationships>'
+)
+# Word 2013+ layout: a zero table indent puts the cell edge (not the text)
+# on the page margin, so the grid lines up with the sheet's die cuts.
+SETTINGS = (
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    '<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+    '<w:compat><w:compatSetting w:name="compatibilityMode" '
+    'w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat>'
+    "</w:settings>"
+)
+
 def write_docx(path, xml):
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("[Content_Types].xml", CONTENT_TYPES)
         z.writestr("_rels/.rels", RELS)
         z.writestr("word/document.xml", xml)
+        z.writestr("word/_rels/document.xml.rels", DOC_RELS)
+        z.writestr("word/settings.xml", SETTINGS)
     print("wrote", os.path.relpath(path))
 
 def template():
