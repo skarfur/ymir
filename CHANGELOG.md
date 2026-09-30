@@ -3,6 +3,14 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — project-label mail merge
+
+- `tools/labels/`: Word mail-merge template (Avery L7160, 3 × 7 on A4) that
+  prints the description of each open saumaklúbbur/maintenance project on a
+  label, plus the SQL for its CSV data source and a stdlib-only
+  `make-labels.py` that regenerates the template or writes a pre-filled sheet.
+  No app, backend or migration changes.
+
 ## Unreleased (Supabase branch) — admin: grouped sidebar, member list + detail, quick search
 
 Frontend-only redesign of the admin shell (option "J" from the UI-alternatives

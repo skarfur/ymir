@@ -22,3 +22,5 @@ package-lock.json
 
 # Local output of tools/gcal-wif-setup.sh (public key, but generated/local)
 tools/jwks.json
+tools/labels/*.csv
+tools/labels/project-labels-merged.docx
