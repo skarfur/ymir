@@ -184,6 +184,19 @@ follow this pattern rather than inventing a new one:
   — the board itself is visible to any active member, but nothing is
   writable except through validated RPC calls.
 
+## Weather flags and guidance
+
+Flag scoring and guidance live in `shared/weather.js` (`SCORE_CONFIG`,
+`FLAG_GUIDANCE_DEFAULTS`) with the saved values under
+`app_config.flagConfig` (edited in Admin → Flags). There are four flags:
+green, yellow, red and black (`FLAG_KEYS`). `orange` is legacy and only kept
+for display. Pass every factor to `wxScoreFlag`, because a null factor
+scores 0. Use `wxFlagNow` for the current flag (it applies hysteresis and
+the staff override). Boat-class guidance is enforced server-side in
+`save_checkout` (see `20260929100000_flag_guidance.sql`): "approval" stores
+the checkout as `pending` until `decide_checkout` runs, and "no" rejects
+it. Any new member-facing checkout path must go through the same gate.
+
 ## Dynamic language attribute
 
 `shared/strings.js` sets `document.documentElement.lang` to the active language on load. The static `lang="en"` in each portal HTML is a fallback; don't try to keep it in sync — the dynamic setter takes over the moment strings.js executes.

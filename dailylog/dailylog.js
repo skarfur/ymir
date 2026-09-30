@@ -227,9 +227,16 @@ function renderActivities() {
     const recordHtml = act.runNotes
       ? `<div class="activity-note activity-note-record">${esc(act.runNotes)}</div>`
       : '';
+    // Today only: what the current flag means for this activity (go / adjust
+    // / cancel), from flagConfig.guidance.activities.
+    const flagG = (isToday() && wxData && wxData.flagKey && typeof wxActivityGuidance === 'function')
+      ? wxActivityGuidance(act.activityTypeId || act.sourceActivityTypeId, wxData.flagKey) : null;
+    const flagHtml = flagG
+      ? `<div class="activity-meta mt-2">${wxGuidanceChip(flagG.status)}${flagG.note ? ' ' + esc(flagG.note) : ''}</div>`
+      : '';
     info.innerHTML = `<div class="activity-name">${esc(act.name)}${scheduledBadge}${ablerBadge}${editedBadge}${linkedCount}</div>
       <div class="activity-meta">${esc(meta)}</div>
-      ${briefHtml}${recordHtml}`;
+      ${flagHtml}${briefHtml}${recordHtml}`;
     const del = document.createElement('button');
     del.className = 'del-btn'; del.dataset.deleteActivity = act.id; del.innerHTML = '&times;';
     row.appendChild(info); row.appendChild(del);
@@ -398,7 +405,7 @@ function renderActTypeBtns() {
 
 // ── Weather log ───────────────────────────────────────────────────────────────
 function renderWxLog() {
-  var fi = { green:"🟢", yellow:"🟡", orange:"🟠", red:"🔴" };
+  var fi = { green:"🟢", yellow:"🟡", orange:"🟠", red:"🔴", black:"⚫" };
   dom.wxLogCount.textContent = wxLog.length
     ? wxLog.length + (wxLog.length === 1 ? ' snapshot' : ' snapshots') : '';
   dom.wxLogList.innerHTML = "";
@@ -564,12 +571,15 @@ document.addEventListener('DOMContentLoaded', () => {
       var nowISO  = new Date().toISOString().slice(0,13);
       var nowIdx  = Math.max(0, (hr.time||[]).findIndex(function(tt) { return sstr(tt).slice(0,13) === nowISO; }));
       var presObj = wxPressureTrend(hr.surface_pressure, nowIdx);
-      var assessed = wxScoreFlag(ws, wDir, waveH || 0, null, null, null, 'good');
+      // Same inputs + override as the flag everyone else sees right now, so the
+      // logged flag matches the displayed one.
+      var assessed = wxFlagNow(ws, wDir, waveH || 0, c.apparent_temperature != null ? c.apparent_temperature : c.temperature_2m, sst, wg, wxVisKey(c.visibility));
       wxData = { ws:ws, wd:wd, wg:wg, bft:bft, wDir:wDir, waveH:waveH,
                  waveDir:waveDir, sst:sst, flagKey:assessed.flagKey,
                  airT:c.temperature_2m, apparentT:c.apparent_temperature,
                  pres:c.surface_pressure, presTrend:presObj.trend,
                  code:c.weather_code };
+      if (isToday()) renderActivities();
     } catch(e) {}
   }
   pollWx();
@@ -823,7 +833,7 @@ async function logRetroWeather() {
     const waveDir = mc.wave_direction != null ? wxDirLabel(mc.wave_direction) : null;
     const sst     = mc.sea_surface_temperature != null ? mc.sea_surface_temperature : null;
     const presObj = wxPressureTrend(hr.surface_pressure, hourIdx);
-    const assessed = wxScoreFlag(ws, wDir, waveH || 0, null, null, null, 'good');
+    const assessed = wxScoreFlag(ws, wDir, waveH || 0, c.apparent_temperature ?? c.temperature_2m, sst, wg, wxVisKey(c.visibility));
     const data = { ws, wd, wg, bft, wDir, waveH, waveDir, sst,
                    flagKey: assessed.flagKey,
                    airT: c.temperature_2m, apparentT: c.apparent_temperature,
@@ -1006,7 +1016,8 @@ async function loadOtherLog() {
 async function loadTodayTrips() {
   try {
     const res = await apiGet('getActiveCheckouts').then(r => { window._activeCheckouts = (r.checkouts||[]); return r; });
-    tripsData = res.checkouts || [];
+    // Flag-approval requests (pending/denied) aren't trips.
+    tripsData = (res.checkouts || []).filter(c => c.status === 'out' || c.status === 'in');
   } catch(e) { tripsData = []; }
   renderTrips();
 }
@@ -1030,6 +1041,7 @@ async function loadIncidentsForDate(date) {
 function applyLogData(logRes, cfgRes) {
   const cfg = cfgRes || {};
   if (cfg.flagConfig && typeof wxLoadFlagConfig === 'function') wxLoadFlagConfig(cfg.flagConfig);
+  if (typeof wxLoadFlagOverride === 'function') wxLoadFlagOverride(cfg.flagOverride || null);
   amItems       = cfg.dailyChecklist?.opening || [];
   pmItems       = cfg.dailyChecklist?.closing || [];
   activityTemplates = cfg.activityTemplates || [];

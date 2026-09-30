@@ -11,6 +11,108 @@ Commit hashes reference the `main` branch.
   `make-labels.py` that regenerates the template or writes a pre-filled sheet.
   No app, backend or migration changes.
 
+## Unreleased (Supabase branch) — remove captain data from public dashboard
+
+- `public/public.js`, `public/public.css`: the "Captain Data" section
+  (profiles, trip tables, per-captain heatmaps and GPS tracks) is gone.
+- `supabase/functions/public-dashboard`: no longer reads or returns
+  `captains`, and `staffStatus` is trimmed to `onDuty`/`supportBoat` (no
+  staff name). Only this year's trips are read now.
+- Removed the now-unused `pub.dash.captainData`, `pub.dash.captainSoon` and
+  `pub.dash.trips` strings (EN + IS).
+
+## Unreleased (Supabase branch) — public dashboard reads from Supabase
+
+- New Edge Function `supabase/functions/public-dashboard` ports
+  `publicDashboard_` (public.gs) with the same response shape, so
+  `/public/` now shows Supabase data instead of the old Google Sheets data.
+  It's public (deploy with verify_jwt disabled), exposes only the fields the
+  Apps Script endpoint already did, caches for 15s in-isolate, and pages
+  through `trips` past PostgREST's 1000-row cap.
+- `shared/api.js`: `dashboard` routes to `public-dashboard`.
+
+## Unreleased (Supabase branch) — public dashboard no longer bounces to login
+
+- `shared/api.js`: a 401 from a Supabase-routed action only triggers the
+  "session expired → /login/" redirect when a session token was actually
+  sent. Anonymous visitors hitting a session-gated action now just get an
+  error for that call instead of being redirected.
+- `shared/weather.js`: the weather widget skips the session-gated BIRK
+  observations proxy (`getWeather`) when there's no session and uses Open-Meteo's current
+  conditions instead. This was the call sending `/public/` visitors to login.
+
+## Unreleased (Supabase branch) — weather: half-hourly BIRK observations
+
+- `supabase/functions/weather/index.ts`: the `weather` Edge Function now
+  fetches METAR BIRK (aviationweather.gov JSON API; every 30 min plus SPECI
+  on significant changes) in parallel with Vedur.is station 1477 (hourly)
+  and returns whichever observation is newer. METAR wind is converted from
+  knots to m/s. Nulls are filled from the other source: QNH pressure from
+  METAR (Vedur 1477 has none), and gust from Vedur's FG when METAR omits
+  it and the Vedur report is ≤90 min older. Each upstream has a 1.7s
+  timeout, so one slow or failing source falls back to the other. The
+  response shape is unchanged; `_source` is `METAR:BIRK` or `Vedur:1477`.
+
+## Unreleased (Supabase branch) — fix: maintenance issues wouldn't resolve
+
+- `maintenance.resolved_by` was a `members(id)` uuid column, but every
+  resolve path sends a display name, so Postgres rejected each resolve and
+  the detail modal's Confirm silently did nothing. Migration
+  `20260929110000_maintenance_resolved_by_text.sql` makes it text and
+  converts existing ids to member names (same fix as `reported_by` earlier).
+- `resolve-maintenance` accepts `resolvedBy` (or the modal's old `by`),
+  falls back to the session member's name, and returns 404 for an unknown id.
+- `shared/maintenance.js`: the modal sends `resolvedBy`, and a failed
+  confirm action now shows an error instead of being swallowed.
+
+## Unreleased (Supabase branch) — weather flags: four flags, guidance per boat class and activity, approval gate
+
+Recalibrated scoring, guidance tables, and a server-side checkout gate. Needs
+migration `20260929100000_flag_guidance.sql` and a redeploy of the
+`get-active-checkouts` Edge Function. No `.gs` changes.
+
+- **Four flags** (green / yellow / red / black). Orange is no longer scored;
+  it stays in `SCORE_CONFIG.flags` only so older trips still render, and the
+  server maps a stored `orange` to `red`. New defaults (20 pts ≈ one flag
+  step; wind alone decides the flag at each force: F5 yellow, F6–F7 red,
+  F8+ black): thresholds 20/40/80, wind bands through Force 12, offshore
+  direction +6 from Force 3, gusts 2+ Force levels +10, waves up to +26, sea
+  temperature up to +12, feels-like up to +10, visibility reduced +8 / poor
+  +30. The old values could never reach black and scored a gale as yellow.
+- **Hysteresis**: a flag is lowered only once the score is 5 points below
+  its threshold (admin-editable), so it stops flickering at a boundary.
+- **Consistent inputs**: the weather widget, weather page hourly strip and
+  daily-log snapshots now all pass gusts, sea temperature, apparent
+  ("feels like") temperature and visibility. The feels-like band was fed air
+  temperature before, and the daily log recorded a flag that ignored gusts,
+  SST and visibility. The hourly strip shows black. Bands are sorted on
+  save, and the direction list is de-duplicated.
+- **Guidance** (`flagConfig.guidance`, edited in Admin → Flags):
+  per-boat-class status for each flag (open / with conditions / approval
+  needed / not allowed, with EN+IS notes), per-boat overrides (all
+  Optimists → a stricter `optimist` profile) and per-activity guidance (runs
+  as planned / adjust / cancel). Seeded with the defaults agreed for Ýmir's
+  fleet and activity types.
+- **Flag detail modal**: "What this means for each boat" table, plus notes
+  when the flag is held by hysteresis, when wave data comes from the offshore
+  fallback point, and that club flags aren't Veðurstofa warnings.
+- **Checkout gate** (`save_checkout`): a member checkout under an "approval
+  needed" flag is stored as `pending` and doesn't count as out until staff or
+  a captain approve it (`decide_checkout`); "not allowed" is rejected.
+  Staff/admin/captain checkouts aren't gated, but the flag and guidance are
+  recorded on the row (`flag_key`, `guidance_status`, `approved_by*`). An
+  active staff override always decides the flag server-side; a missing flag
+  on a guided boat class asks for approval.
+- **Member portal**: guidance banner in each launch step, "Request approval"
+  submit, pending/denied cards with withdraw (`cancel_checkout_request`), and
+  a poll that reports approval or denial.
+- **Staff portal**: "Awaiting approval" queue with approve / deny (reason
+  shown to the member), crew confirmations sent on approval, guidance note in
+  the checkout form, and today's activities with their go / adjust / cancel
+  status under the current flag. The daily log shows the same activity
+  status.
+- Flag advice texts rewritten for four flags; Icelandic typos fixed.
+
 ## Unreleased (Supabase branch) — admin: grouped sidebar, member list + detail, quick search
 
 Frontend-only redesign of the admin shell (option "J" from the UI-alternatives

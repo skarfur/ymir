@@ -1705,3 +1705,32 @@ textarea { min-height: 70px; }
   outline: 2px solid var(--accent-fg);
   outline-offset: 2px;
 }
+
+/* ── Flag guidance (shared/weather.js) ─────────────────────────────────────── */
+.wx-guidance-chip   { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 12px; border: 1px solid; white-space: nowrap; }
+.wx-guidance-table  { display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px; }
+.wx-guidance-row    { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.wx-guidance-name   { min-width: 110px; color: var(--text); font-weight: 500; }
+.wx-guidance-note   { flex-basis: 100%; color: var(--muted); font-size: 11px; line-height: 1.45; }
+.wx-flag-foot       { font-size: 10px; color: var(--muted); line-height: 1.5; display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.launch-guidance    { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; background: var(--card); }
+.flag-request-card  { display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); }
+.flag-request-card.is-pending { border-left: 3px solid var(--orange); }
+.flag-request-card.is-denied  { border-left: 3px solid var(--red); }
+.approval-card      { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 8px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--orange) 40%, transparent); background: var(--card); }
+.pending-count      { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--orange); color: #fff; text-align: center; font-size: 10px; }
+.act-flag-row       { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.act-flag-note      { flex-basis: 100%; }
+
+/* Admin → Flags → guidance editors */
+.fc-gd-grid         { overflow-x: auto; }
+.fc-gd-row          { display: grid; grid-template-columns: 130px repeat(4, minmax(120px, 1fr)); gap: 6px; padding: 6px 0; border-bottom: 1px solid var(--border); min-width: 640px; }
+.fc-gd-head         { border-bottom: 0; padding-bottom: 0; }
+.fc-gd-cell-head    { text-align: center; font-size: 14px; }
+.fc-gd-name         { font-size: 12px; }
+.fc-gd-cell         { display: flex; flex-direction: column; gap: 3px; padding-top: 4px; }
+.fc-gd-cell select, .fc-gd-cell input { font-size: 11px; padding: 3px 5px; width: 100%; box-sizing: border-box; }
+.fc-gd-boats        { display: flex; flex-direction: column; gap: 4px; max-height: 360px; overflow-y: auto; }
+.fc-gd-boat         { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 3px 0; border-bottom: 1px solid var(--border); }
+.fc-gd-boat select  { max-width: 180px; font-size: 11px; }
+.fc-gd-remove       { background: none; border: 0; padding: 0; margin-top: 2px; color: var(--red); cursor: pointer; font: inherit; font-size: 10px; }

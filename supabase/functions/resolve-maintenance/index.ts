@@ -23,11 +23,21 @@ Deno.serve(async (req: Request) => {
   const id = body?.id ? String(body.id) : "";
   if (!id) return json({ error: "id required" }, 400);
 
+  // resolved_by is a display name (see 20260929110000). Callers send
+  // `resolvedBy`; the shared detail modal historically sent `by`. Fall back
+  // to the session member's own name.
+  let resolvedBy = String(body?.resolvedBy || body?.by || "").trim();
+  if (!resolvedBy && session.memberId) {
+    const { data: m } = await admin.from("members").select("name").eq("id", session.memberId).maybeSingle();
+    resolvedBy = m?.name || "";
+  }
+
   const ts = new Date().toISOString();
-  const { error } = await admin.from("maintenance").update({
-    resolved: true, resolved_by: String(body?.resolvedBy || ""), resolved_at: ts, updated_at: ts,
-  }).eq("id", id);
+  const { data: updated, error } = await admin.from("maintenance").update({
+    resolved: true, resolved_by: resolvedBy, resolved_at: ts, updated_at: ts,
+  }).eq("id", id).select("id");
   if (error) return json({ error: "Resolve failed: " + error.message }, 500);
+  if (!updated || !updated.length) return json({ error: "Maintenance request not found" }, 404);
 
   return json({ resolved: true });
 });

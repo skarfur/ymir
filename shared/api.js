@@ -538,6 +538,9 @@ var _SUPABASE_ACTIONS = {
   getCrewBoard:       'get-crew-board',
   getCrewInvites:     'get-crew-invites',
   getDailyLog:        'get-daily-log',
+  // /public/'s anonymous dashboard — public (verify_jwt disabled), no
+  // session sent or required. Ported from Apps Script's publicDashboard_.
+  dashboard:          'public-dashboard',
   // saveCheckout/checkIn/deleteCheckout/saveGroupCheckout/groupCheckIn/
   // saveBoatOos/saveBoatAccess/saveReservation/removeReservation: admin-or-
   // self / staff-or-admin RLS gate + Postgres RPC (see member/member.js,
@@ -611,8 +614,9 @@ var _SUPABASE_ACTIONS = {
 
 async function _callSupabase(action, payload, opts) {
   var body = Object.assign({}, payload);
+  var t = null;
   if (action !== 'loginMember') {
-    var t = _getSessionToken();
+    t = _getSessionToken();
     if (t) body.sessionToken = t;
   }
   try {
@@ -626,7 +630,11 @@ async function _callSupabase(action, payload, opts) {
     // force a disruptive logout on the user's behalf.
     var onLoginPage = (typeof window !== 'undefined' && window.location &&
       window.location.pathname.indexOf('/login/') >= 0);
-    if (e && e.code === 401 && action !== 'loginMember' && !onLoginPage && !(opts && opts.silent)) {
+    // Also skipped when no session token was sent at all: there's no
+    // session to have expired, so a 401 just means an anonymous visitor
+    // (e.g. the public dashboard) hit a session-gated action — surface it
+    // as a normal error rather than hijacking the page to /login/.
+    if (e && e.code === 401 && t && action !== 'loginMember' && !onLoginPage && !(opts && opts.silent)) {
       _handleUnauthorized();
     }
     throw e;
